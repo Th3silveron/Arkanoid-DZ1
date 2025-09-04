@@ -1,16 +1,14 @@
 #include "Ball.h"
-#include <cmath>
+#include <random>
 
 namespace ArkanoidGame
 {
 	Ball::Ball(float x, float y, float r, float s)
-		: radius(r), positionX(x), positionY(y), velocityX(0.0f), velocityY(0.0f), speed(s), isLaunched(false)
+		: GameObject(x, y, r * 2, r * 2), radius(r), velocityX(0), velocityY(0), speed(s), isLaunched(false)
 	{
 		shape.setRadius(radius);
-		shape.setPosition(positionX, positionY);
+		shape.setPosition(x, y);
 		shape.setFillColor(sf::Color::White);
-		shape.setOutlineColor(sf::Color::Black);
-		shape.setOutlineThickness(2.0f);
 		shape.setOrigin(radius, radius);
 	}
 
@@ -21,7 +19,7 @@ namespace ArkanoidGame
 
 	sf::Vector2f Ball::getPosition() const
 	{
-		return sf::Vector2f(positionX, positionY);
+		return position;
 	}
 
 	float Ball::getRadius() const
@@ -39,14 +37,15 @@ namespace ArkanoidGame
 		if (!isLaunched)
 		{
 			isLaunched = true;
-			// Launch ball upward with some horizontal variation
-			velocityX = (rand() % 200 - 100) / 100.0f; // Random direction between -1 and 1
-			velocityY = -speed;
 			
-			// Normalize and scale to speed
-			float length = std::sqrt(velocityX * velocityX + velocityY * velocityY);
-			velocityX = (velocityX / length) * speed;
-			velocityY = (velocityY / length) * speed;
+			// Random initial direction (upward with slight randomness)
+			std::random_device rd;
+			std::mt19937 gen(rd());
+			std::uniform_real_distribution<float> angleDist(-0.3f, 0.3f);
+			
+			float angle = angleDist(gen);
+			velocityX = speed * sin(angle);
+			velocityY = -speed * cos(angle); // Negative for upward movement
 		}
 	}
 
@@ -54,13 +53,19 @@ namespace ArkanoidGame
 	{
 		if (isLaunched)
 		{
-			positionX += velocityX * timeDelta;
-			positionY += velocityY * timeDelta;
-			shape.setPosition(positionX, positionY);
+			// Update position
+			position.x += velocityX * timeDelta;
+			position.y += velocityY * timeDelta;
+
+			// Handle wall collisions
+			handleWallCollision();
+
+			// Update shape position
+			shape.setPosition(position.x, position.y);
 		}
 	}
 
-	void Ball::draw(sf::RenderWindow& window)
+	void Ball::draw(sf::RenderWindow& window) const
 	{
 		window.draw(shape);
 	}
@@ -68,25 +73,23 @@ namespace ArkanoidGame
 	void Ball::handleWallCollision()
 	{
 		// Left and right walls
-		if (positionX - radius <= 0)
+		if (position.x - radius <= 0)
 		{
-			positionX = radius;
-			velocityX = std::abs(velocityX); // Bounce right
+			position.x = radius;
+			velocityX = -velocityX;
 		}
-		else if (positionX + radius >= SCREEN_WIDTH)
+		else if (position.x + radius >= SCREEN_WIDTH)
 		{
-			positionX = SCREEN_WIDTH - radius;
-			velocityX = -std::abs(velocityX); // Bounce left
+			position.x = SCREEN_WIDTH - radius;
+			velocityX = -velocityX;
 		}
 
 		// Top wall
-		if (positionY - radius <= 0)
+		if (position.y - radius <= 0)
 		{
-			positionY = radius;
-			velocityY = std::abs(velocityY); // Bounce down
+			position.y = radius;
+			velocityY = -velocityY;
 		}
-
-		shape.setPosition(positionX, positionY);
 	}
 
 	void Ball::handlePlatformCollision(const sf::FloatRect& platformBounds)
@@ -95,60 +98,82 @@ namespace ArkanoidGame
 		
 		if (ballBounds.intersects(platformBounds))
 		{
-			// Calculate collision point and bounce direction
-			float ballCenterX = positionX;
-			float ballCenterY = positionY;
-			float platformCenterX = platformBounds.left + platformBounds.width / 2.0f;
-			float platformCenterY = platformBounds.top + platformBounds.height / 2.0f;
+			// Bounce the ball upward
+			velocityY = -abs(velocityY);
+			
+			// Adjust X velocity based on where the ball hits the platform
+			float platformCenterX = platformBounds.left + platformBounds.width / 2;
+			float hitPosition = position.x - platformCenterX;
+			float normalizedHit = hitPosition / (platformBounds.width / 2);
+			
+			// Add some horizontal velocity based on hit position
+			velocityX += normalizedHit * speed * 0.5f;
+			
+			// Ensure ball doesn't get stuck inside platform
+			position.y = platformBounds.top - radius;
+		}
+	}
 
-			// Determine which side of the platform was hit
-			float relativeX = ballCenterX - platformCenterX;
-			float relativeY = ballCenterY - platformCenterY;
-
-			// Bounce off platform
-			if (std::abs(relativeX) > std::abs(relativeY))
+	void Ball::handleBlockCollision(const sf::FloatRect& blockBounds)
+	{
+		sf::FloatRect ballBounds = getBounds();
+		
+		if (ballBounds.intersects(blockBounds))
+		{
+			// Calculate collision side
+			float ballCenterX = position.x;
+			float ballCenterY = position.y;
+			float blockCenterX = blockBounds.left + blockBounds.width / 2;
+			float blockCenterY = blockBounds.top + blockBounds.height / 2;
+			
+			float deltaX = ballCenterX - blockCenterX;
+			float deltaY = ballCenterY - blockCenterY;
+			
+			// Determine which side was hit
+			if (abs(deltaX) / blockBounds.width > abs(deltaY) / blockBounds.height)
 			{
-				// Hit from left or right
+				// Hit left or right side
 				velocityX = -velocityX;
 			}
 			else
 			{
-				// Hit from top or bottom
+				// Hit top or bottom side
 				velocityY = -velocityY;
 			}
-
-			// Ensure ball moves upward after hitting platform
-			if (velocityY > 0)
+			
+			// Move ball out of block to prevent getting stuck
+			if (abs(deltaX) / blockBounds.width > abs(deltaY) / blockBounds.height)
 			{
-				velocityY = -std::abs(velocityY);
+				if (deltaX > 0)
+					position.x = blockBounds.left + blockBounds.width + radius;
+				else
+					position.x = blockBounds.left - radius;
 			}
-
-			// Add some randomness to prevent infinite loops
-			velocityX += (rand() % 100 - 50) / 1000.0f;
-			velocityY += (rand() % 100 - 50) / 1000.0f;
-
-			// Normalize and scale back to speed
-			float length = std::sqrt(velocityX * velocityX + velocityY * velocityY);
-			velocityX = (velocityX / length) * speed;
-			velocityY = (velocityY / length) * speed;
+			else
+			{
+				if (deltaY > 0)
+					position.y = blockBounds.top + blockBounds.height + radius;
+				else
+					position.y = blockBounds.top - radius;
+			}
 		}
 	}
 
 	void Ball::reset(float x, float y)
 	{
-		positionX = x;
-		positionY = y;
-		velocityX = 0.0f;
-		velocityY = 0.0f;
+		position.x = x;
+		position.y = y;
+		velocityX = 0;
+		velocityY = 0;
 		isLaunched = false;
-		shape.setPosition(positionX, positionY);
+		shape.setPosition(x, y);
 	}
 
 	void Ball::setPosition(float x, float y)
 	{
-		positionX = x;
-		positionY = y;
-		shape.setPosition(positionX, positionY);
+		position.x = x;
+		position.y = y;
+		shape.setPosition(x, y);
 	}
 
 	void Ball::setVelocity(float vx, float vy)

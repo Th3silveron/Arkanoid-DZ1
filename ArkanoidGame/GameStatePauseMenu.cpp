@@ -3,7 +3,7 @@
 #include "Game.h"
 #include <assert.h>
 
-namespace ArkanoidGame
+namespace SnakeGame
 {
 	void InitGameStatePauseMenu(GameStatePauseMenuData& data)
 	{

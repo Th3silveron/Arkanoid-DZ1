@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "GameSettings.h"
 #include <cstdlib>
 
 namespace ArkanoidGame
@@ -21,6 +22,7 @@ namespace ArkanoidGame
 	{
 		// Init game clock
 		sf::Clock gameClock;
+		constexpr float TIME_PER_FRAME = 1.0f / 60.0f; // 60 fps
 
 		// Game loop
 		while (window.isOpen()) {
@@ -57,5 +59,4 @@ namespace ArkanoidGame
 			}
 		}
 	}
-
 }

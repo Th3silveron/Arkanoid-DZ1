@@ -1,39 +1,43 @@
 #include "GameStateExitDialog.h"
-#include "Application.h"
-#include "Game.h"
-#include "Text.h"
 #include "GameSettings.h"
-#include <assert.h>
 
 namespace ArkanoidGame
 {
 	GameStateExitDialog::GameStateExitDialog()
 	{
-		assert(font.loadFromFile(FONTS_PATH + "Roboto-Regular.ttf"));
 		initializeUI();
 	}
 
 	void GameStateExitDialog::initializeUI()
 	{
-		// Init background
-		background.setSize(sf::Vector2f(SCREEN_WIDTH, SCREEN_HEIGHT));
-		background.setPosition(0.f, 0.f);
-		background.setFillColor(sf::Color(0, 0, 0, 128)); // Semi-transparent black
+		// Load font
+		if (!font.loadFromFile(FONTS_PATH + "Roboto-Regular.ttf"))
+		{
+			// Fallback to default font if loading fails
+		}
 
-		titleText.setFont(font);
-		titleText.setCharacterSize(48);
-		titleText.setFillColor(sf::Color::Red);
-		titleText.setString("Exit Game?");
+		// Initialize background
+		background.setSize(sf::Vector2f(400, 200));
+		background.setPosition((SCREEN_WIDTH - 400) / 2, (SCREEN_HEIGHT - 200) / 2);
+		background.setFillColor(sf::Color(0, 0, 0, 200));
+		background.setOutlineColor(sf::Color::White);
+		background.setOutlineThickness(2);
 
-		yesText.setFont(font);
-		yesText.setCharacterSize(32);
-		yesText.setFillColor(sf::Color::White);
-		yesText.setString("Yes (Y)");
+		// Initialize exit text
+		exitText.setFont(font);
+		exitText.setString("Exit Game?");
+		exitText.setCharacterSize(32);
+		exitText.setFillColor(sf::Color::White);
+		exitText.setOrigin(exitText.getLocalBounds().width / 2, exitText.getLocalBounds().height / 2);
+		exitText.setPosition(SCREEN_WIDTH / 2, (SCREEN_HEIGHT - 200) / 2 + 50);
 
-		noText.setFont(font);
-		noText.setCharacterSize(32);
-		noText.setFillColor(sf::Color::White);
-		noText.setString("No (N)");
+		// Initialize hint text
+		hintText.setFont(font);
+		hintText.setString("Press Y to exit, N or ESC to continue");
+		hintText.setCharacterSize(18);
+		hintText.setFillColor(sf::Color::Yellow);
+		hintText.setOrigin(hintText.getLocalBounds().width / 2, hintText.getLocalBounds().height / 2);
+		hintText.setPosition(SCREEN_WIDTH / 2, (SCREEN_HEIGHT - 200) / 2 + 120);
 	}
 
 	void GameStateExitDialog::handleWindowEvent(const sf::Event& event)
@@ -42,39 +46,32 @@ namespace ArkanoidGame
 		{
 			if (event.key.code == sf::Keyboard::Y)
 			{
-				Application::Instance().GetGame().Shutdown();
+				// Exit the game
+				if (game)
+				{
+					game->SwitchStateTo(GameStateType::None);
+				}
 			}
 			else if (event.key.code == sf::Keyboard::N || event.key.code == sf::Keyboard::Escape)
 			{
-				Application::Instance().GetGame().PopState();
+				// Return to previous state
+				if (game)
+				{
+					game->PopState();
+				}
 			}
 		}
 	}
 
 	void GameStateExitDialog::update(float timeDelta)
 	{
-		// No update logic needed
+		// No update logic needed for this state
 	}
 
 	void GameStateExitDialog::draw(sf::RenderWindow& window)
 	{
-		sf::Vector2f viewSize = window.getView().getSize();
-
-		// Draw background
 		window.draw(background);
-
-		// Draw title
-		titleText.setOrigin(GetTextOrigin(titleText, { 0.5f, 0.5f }));
-		titleText.setPosition(viewSize.x / 2.f, viewSize.y / 2.f - 50.f);
-		window.draw(titleText);
-
-		// Draw options
-		yesText.setOrigin(GetTextOrigin(yesText, { 0.5f, 0.5f }));
-		yesText.setPosition(viewSize.x / 2.f, viewSize.y / 2.f + 20.f);
-		window.draw(yesText);
-
-		noText.setOrigin(GetTextOrigin(noText, { 0.5f, 0.5f }));
-		noText.setPosition(viewSize.x / 2.f, viewSize.y / 2.f + 60.f);
-		window.draw(noText);
+		window.draw(exitText);
+		window.draw(hintText);
 	}
 }

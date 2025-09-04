@@ -6,7 +6,7 @@
 
 namespace ArkanoidGame
 {
-	enum class GameOptions: std::uint8_t
+	enum GameOptions: std::uint8_t
 	{
 		InfiniteLives = 1 << 0,
 		WithAcceleration = 1 << 1,
@@ -21,18 +21,28 @@ namespace ArkanoidGame
 		MainMenu,
 		Playing,
 		GameOver,
+		Win,
 		ExitDialog,
 		Records,
 	};
+
+	// Forward declaration
+	class Game;
 
 	// Base class for all game states
 	class GameStateBase
 	{
 	public:
+		GameStateBase() : game(nullptr) {}
 		virtual ~GameStateBase() = default;
 		virtual void handleWindowEvent(const sf::Event& event) = 0;
 		virtual void update(float timeDelta) = 0;
 		virtual void draw(sf::RenderWindow& window) = 0;
+		
+		void setGame(Game* gameInstance) { game = gameInstance; }
+		
+	protected:
+		Game* game;
 	};
 
 	struct GameState

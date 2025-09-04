@@ -7,29 +7,29 @@ namespace ArkanoidGame
 	class Game; // Forward declaration
 
 	/**
-	 * @brief Main menu state for Arkanoid game
+	 * @brief Win state for Arkanoid game
 	 * 
-	 * Displays the main menu with options to start the game,
-	 * view records, or exit the game. Supports arrow key navigation.
+	 * Displays congratulations message and offers to play again.
+	 * Player can choose Yes (restart game) or No (return to main menu).
 	 */
-	class GameStateMainMenu : public GameStateBase
+	class GameStateWin : public GameStateBase
 	{
 	private:
 		sf::Font font;
-		sf::Text titleText;
-		sf::Text startGameText;
-		sf::Text recordsText;
-		sf::Text exitText;
+		sf::Text congratulationsText;
+		sf::Text playAgainText;
+		sf::Text yesText;
+		sf::Text noText;
 		sf::RectangleShape background;
 		
 		// Menu navigation
-		int selectedOption = 0;
-		static const int MENU_OPTIONS_COUNT = 3;
+		int selectedOption = 0; // 0 = Yes, 1 = No
+		static const int MENU_OPTIONS_COUNT = 2;
 		sf::Text* menuOptions[MENU_OPTIONS_COUNT];
 
 	public:
-		GameStateMainMenu();
-		~GameStateMainMenu() = default;
+		GameStateWin();
+		~GameStateWin() = default;
 
 		void handleWindowEvent(const sf::Event& event) override;
 		void update(float timeDelta) override;

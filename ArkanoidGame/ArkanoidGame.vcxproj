@@ -22,7 +22,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{C3A962DD-12D8-4E72-99F3-C940EF572498}</ProjectGuid>
-    <RootNamespace>SnakeGame</RootNamespace>
+    <RootNamespace>ArkanoidGame</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     <ProjectName>ArkanoidGame</ProjectName>
   </PropertyGroup>
@@ -160,26 +160,33 @@
   <ItemGroup>
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Ball.cpp" />
+    <ClCompile Include="Block.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameMain.cpp" />
+    <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="GameStateExitDialog.cpp" />
     <ClCompile Include="GameStateGameOver.cpp" />
     <ClCompile Include="GameStateMainMenu.cpp" />
     <ClCompile Include="GameStatePlaying.cpp" />
     <ClCompile Include="GameStateRecords.cpp" />
+    <ClCompile Include="GameStateWin.cpp" />
     <ClCompile Include="Platform.cpp" />
     <ClCompile Include="Text.cpp" />
+ 
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="Ball.h" />
+    <ClInclude Include="Block.h" />
     <ClInclude Include="Game.h" />
+    <ClInclude Include="GameObject.h" />
     <ClInclude Include="GameSettings.h" />
     <ClInclude Include="GameStateExitDialog.h" />
     <ClInclude Include="GameStateGameOver.h" />
     <ClInclude Include="GameStateMainMenu.h" />
     <ClInclude Include="GameStatePlaying.h" />
     <ClInclude Include="GameStateRecords.h" />
+    <ClInclude Include="GameStateWin.h" />
     <ClInclude Include="Platform.h" />
     <ClInclude Include="Text.h" />
     <ClInclude Include="Vector.h" />

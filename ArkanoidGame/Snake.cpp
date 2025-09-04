@@ -84,7 +84,7 @@ namespace
 	}
 }
 
-namespace ArkanoidGame
+namespace SnakeGame
 {
 	void LoadSnakeTextures(Snake& snake)
 	{

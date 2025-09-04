@@ -3,7 +3,7 @@
 #include "GameSettings.h"
 #include <list>
 
-namespace ArkanoidGame
+namespace SnakeGame
 {
 	void InitSprite(sf::Sprite& sprite, float desiredWidth, float desiredHeight, const sf::Texture& texture);
 	void SetSpriteSize(sf::Sprite& sprite, float desiredWidth, float desiredHeight);

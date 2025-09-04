@@ -7,9 +7,8 @@ namespace ArkanoidGame
 	{
 		shape.setSize(sf::Vector2f(width, height));
 		shape.setPosition(positionX, positionY);
-		shape.setFillColor(sf::Color::White);
-		shape.setOutlineColor(sf::Color::Black);
-		shape.setOutlineThickness(2.0f);
+		shape.setFillColor(sf::Color::Blue);
+		shape.setOrigin(width / 2, height / 2);
 	}
 
 	sf::FloatRect Platform::getBounds() const
@@ -19,7 +18,7 @@ namespace ArkanoidGame
 
 	sf::Vector2f Platform::getPosition() const
 	{
-		return shape.getPosition();
+		return sf::Vector2f(positionX, positionY);
 	}
 
 	float Platform::getWidth() const
@@ -44,34 +43,35 @@ namespace ArkanoidGame
 
 	void Platform::update(float timeDelta)
 	{
-		float movement = 0.0f;
+		float deltaX = 0.0f;
 		
 		if (isMovingLeft)
 		{
-			movement -= speed * timeDelta;
+			deltaX = -speed * timeDelta;
 		}
-		if (isMovingRight)
+		else if (isMovingRight)
 		{
-			movement += speed * timeDelta;
+			deltaX = speed * timeDelta;
 		}
 
 		// Update position
-		positionX += movement;
-		
+		positionX += deltaX;
+
 		// Keep platform within screen bounds
-		if (positionX < 0)
+		if (positionX - width / 2 < 0)
 		{
-			positionX = 0;
+			positionX = width / 2;
 		}
-		else if (positionX + width > SCREEN_WIDTH)
+		else if (positionX + width / 2 > SCREEN_WIDTH)
 		{
-			positionX = SCREEN_WIDTH - width;
+			positionX = SCREEN_WIDTH - width / 2;
 		}
 
+		// Update shape position
 		shape.setPosition(positionX, positionY);
 	}
 
-	void Platform::draw(sf::RenderWindow& window)
+	void Platform::draw(sf::RenderWindow& window) const
 	{
 		window.draw(shape);
 	}

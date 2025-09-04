@@ -1,93 +1,149 @@
 #include "GameStateMainMenu.h"
-#include "Application.h"
-#include "Game.h"
-#include "Text.h"
 #include "GameSettings.h"
-#include <assert.h>
 
 namespace ArkanoidGame
 {
 	GameStateMainMenu::GameStateMainMenu()
 	{
-		assert(font.loadFromFile(FONTS_PATH + "Roboto-Regular.ttf"));
 		initializeUI();
+		
+		// Initialize menu options array
+		menuOptions[0] = &startGameText;
+		menuOptions[1] = &recordsText;
+		menuOptions[2] = &exitText;
+		
+		// Initialize menu selection
+		updateMenuSelection();
 	}
 
 	void GameStateMainMenu::initializeUI()
 	{
-		// Init background
+		// Load font
+		if (!font.loadFromFile(FONTS_PATH + "Roboto-Regular.ttf"))
+		{
+			// Fallback to default font if loading fails
+		}
+
+		// Initialize background
 		background.setSize(sf::Vector2f(SCREEN_WIDTH, SCREEN_HEIGHT));
 		background.setPosition(0.f, 0.f);
-		background.setFillColor(sf::Color(50, 50, 100)); // Dark blue background
+		background.setFillColor(sf::Color(0, 50, 100));
 
+		// Initialize title text
 		titleText.setFont(font);
+		titleText.setString("ARKANOID GAME");
 		titleText.setCharacterSize(48);
-		titleText.setStyle(sf::Text::Bold);
 		titleText.setFillColor(sf::Color::Yellow);
-		titleText.setString("ARKANOID");
+		titleText.setOrigin(titleText.getLocalBounds().width / 2, titleText.getLocalBounds().height / 2);
+		titleText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 150);
 
-		startText.setFont(font);
-		startText.setCharacterSize(32);
-		startText.setFillColor(sf::Color::White);
-		startText.setString("Press Enter to Start");
+		// Initialize start game text
+		startGameText.setFont(font);
+		startGameText.setString("Start Game");
+		startGameText.setCharacterSize(24);
+		startGameText.setFillColor(sf::Color::White);
+		startGameText.setOrigin(startGameText.getLocalBounds().width / 2, startGameText.getLocalBounds().height / 2);
+		startGameText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50);
 
+		// Initialize records text
+		recordsText.setFont(font);
+		recordsText.setString("View Records");
+		recordsText.setCharacterSize(24);
+		recordsText.setFillColor(sf::Color::White);
+		recordsText.setOrigin(recordsText.getLocalBounds().width / 2, recordsText.getLocalBounds().height / 2);
+		recordsText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+
+		// Initialize exit text
 		exitText.setFont(font);
+		exitText.setString("Exit Game");
 		exitText.setCharacterSize(24);
 		exitText.setFillColor(sf::Color::White);
-		exitText.setString("Press Escape to Exit");
-
-		hintText.setFont(font);
-		hintText.setCharacterSize(20);
-		hintText.setFillColor(sf::Color::Cyan);
-		hintText.setString("Use arrow keys to move platform\nSpace to launch ball");
+		exitText.setOrigin(exitText.getLocalBounds().width / 2, exitText.getLocalBounds().height / 2);
+		exitText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50);
 	}
 
 	void GameStateMainMenu::handleWindowEvent(const sf::Event& event)
 	{
 		if (event.type == sf::Event::KeyPressed)
 		{
-			if (event.key.code == sf::Keyboard::Enter)
+			if (event.key.code == sf::Keyboard::Up)
 			{
-				Application::Instance().GetGame().SwitchStateTo(GameStateType::Playing);
+				selectedOption = (selectedOption - 1 + MENU_OPTIONS_COUNT) % MENU_OPTIONS_COUNT;
+				updateMenuSelection();
+			}
+			else if (event.key.code == sf::Keyboard::Down)
+			{
+				selectedOption = (selectedOption + 1) % MENU_OPTIONS_COUNT;
+				updateMenuSelection();
+			}
+			else if (event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Space)
+			{
+				selectOption();
 			}
 			else if (event.key.code == sf::Keyboard::Escape)
 			{
-				// Close the application
-				Application::Instance().GetGame().Shutdown();
+				// Exit game
+				if (game)
+				{
+					game->SwitchStateTo(GameStateType::None);
+				}
 			}
 		}
 	}
 
 	void GameStateMainMenu::update(float timeDelta)
 	{
-		// No update logic needed for main menu
+		// No update logic needed for this state
+	}
+
+	void GameStateMainMenu::updateMenuSelection()
+	{
+		// Reset all text colors to white
+		startGameText.setFillColor(sf::Color::White);
+		recordsText.setFillColor(sf::Color::White);
+		exitText.setFillColor(sf::Color::White);
+		
+		// Highlight selected option
+		menuOptions[selectedOption]->setFillColor(sf::Color::Yellow);
+	}
+
+	void GameStateMainMenu::selectOption()
+	{
+		if (!game) return;
+		
+		switch (selectedOption)
+		{
+		case 0: // Start Game
+			game->SwitchStateTo(GameStateType::Playing);
+			break;
+		case 1: // View Records
+			game->PushState(GameStateType::Records, true);
+			break;
+		case 2: // Exit Game
+			game->SwitchStateTo(GameStateType::None);
+			break;
+		}
 	}
 
 	void GameStateMainMenu::draw(sf::RenderWindow& window)
 	{
-		sf::Vector2f viewSize = window.getView().getSize();
-
 		// Draw background
 		window.draw(background);
 
-		// Draw title
-		titleText.setOrigin(GetTextOrigin(titleText, { 0.5f, 0.5f }));
-		titleText.setPosition(viewSize.x / 2.f, viewSize.y / 3.f);
+		// Draw all text elements
 		window.draw(titleText);
-
-		// Draw start text
-		startText.setOrigin(GetTextOrigin(startText, { 0.5f, 0.5f }));
-		startText.setPosition(viewSize.x / 2.f, viewSize.y / 2.f);
-		window.draw(startText);
-
-		// Draw exit text
-		exitText.setOrigin(GetTextOrigin(exitText, { 0.5f, 0.5f }));
-		exitText.setPosition(viewSize.x / 2.f, viewSize.y / 2.f + 50.f);
+		window.draw(startGameText);
+		window.draw(recordsText);
 		window.draw(exitText);
-
-		// Draw hint text
-		hintText.setOrigin(GetTextOrigin(hintText, { 0.5f, 0.5f }));
-		hintText.setPosition(viewSize.x / 2.f, viewSize.y * 0.8f);
+		
+		// Draw control hint
+		sf::Text hintText;
+		hintText.setFont(font);
+		hintText.setString("Use UP/DOWN arrows to navigate, ENTER to select, ESC to exit");
+		hintText.setCharacterSize(16);
+		hintText.setFillColor(sf::Color::Cyan);
+		hintText.setOrigin(hintText.getLocalBounds().width / 2, hintText.getLocalBounds().height / 2);
+		hintText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
 		window.draw(hintText);
 	}
 }

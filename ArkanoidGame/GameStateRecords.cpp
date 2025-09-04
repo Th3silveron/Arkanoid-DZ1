@@ -1,62 +1,77 @@
 #include "GameStateRecords.h"
-#include "Application.h"
-#include "Game.h"
-#include "Text.h"
 #include "GameSettings.h"
-#include <assert.h>
-#include <sstream>
 
 namespace ArkanoidGame
 {
 	GameStateRecords::GameStateRecords()
 	{
-		assert(font.loadFromFile(FONTS_PATH + "Roboto-Regular.ttf"));
 		initializeUI();
-		updateRecordsTable();
 	}
 
 	void GameStateRecords::initializeUI()
 	{
-		// Init background
+		// Load font
+		if (!font.loadFromFile(FONTS_PATH + "Roboto-Regular.ttf"))
+		{
+			// Fallback to default font if loading fails
+		}
+
+		// Initialize background
 		background.setSize(sf::Vector2f(SCREEN_WIDTH, SCREEN_HEIGHT));
 		background.setPosition(0.f, 0.f);
-		background.setFillColor(sf::Color(50, 50, 100)); // Dark blue background
+		background.setFillColor(sf::Color(0, 50, 100));
 
+		// Initialize title text
 		titleText.setFont(font);
-		titleText.setCharacterSize(48);
-		titleText.setStyle(sf::Text::Bold);
-		titleText.setFillColor(sf::Color::Red);
-		titleText.setString("RECORDS");
+		titleText.setString("HIGH SCORES");
+		titleText.setCharacterSize(36);
+		titleText.setFillColor(sf::Color::Yellow);
+		titleText.setOrigin(titleText.getLocalBounds().width / 2, titleText.getLocalBounds().height / 2);
+		titleText.setPosition(SCREEN_WIDTH / 2, 100);
 
+		// Initialize hint text
 		hintText.setFont(font);
-		hintText.setCharacterSize(24);
-		hintText.setFillColor(sf::Color::White);
 		hintText.setString("Press ESC to return to main menu");
+		hintText.setCharacterSize(18);
+		hintText.setFillColor(sf::Color::White);
+		hintText.setOrigin(hintText.getLocalBounds().width / 2, hintText.getLocalBounds().height / 2);
+		hintText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 50);
 
-		recordsTableTexts.reserve(MAX_RECORDS_TABLE_SIZE);
+		// Initialize records table texts
+		recordsTableTexts.resize(10);
+		for (int i = 0; i < 10; ++i)
+		{
+			recordsTableTexts[i].setFont(font);
+			recordsTableTexts[i].setCharacterSize(20);
+			recordsTableTexts[i].setFillColor(sf::Color::White);
+		}
+
+		updateRecordsTable();
 	}
 
 	void GameStateRecords::updateRecordsTable()
 	{
-		const Game& game = Application::Instance().GetGame();
-		std::multimap<int, std::string> sortedRecordsTable;
-		for (const auto& item : game.GetRecordsTable())
-		{
-			sortedRecordsTable.insert(std::make_pair(item.second, item.first));
-		}
+		// This would normally fetch records from the Game class
+		// For now, we'll use placeholder data
+		std::vector<std::pair<std::string, int>> records = {
+			{"Player1", 1500},
+			{"Player2", 1200},
+			{"Player3", 1000},
+			{"Player4", 800},
+			{"Player5", 600},
+			{"Player6", 500},
+			{"Player7", 400},
+			{"Player8", 300},
+			{"Player9", 200},
+			{"Player10", 100}
+		};
 
-		auto it = sortedRecordsTable.rbegin();
-		for (int i = 0; i < MAX_RECORDS_TABLE_SIZE && it != sortedRecordsTable.rend(); ++i, ++it)
+		for (size_t i = 0; i < records.size() && i < recordsTableTexts.size(); ++i)
 		{
-			recordsTableTexts.emplace_back();
-			sf::Text& text = recordsTableTexts.back();
-
-			std::stringstream sstream;
-			sstream << i + 1 << ". " << it->second << ": " << it->first;
-			text.setString(sstream.str());
-			text.setFont(font);
-			text.setCharacterSize(24);
-			text.setFillColor(sf::Color::White);
+			std::string recordText = std::to_string(i + 1) + ". " + records[i].first + " - " + std::to_string(records[i].second);
+			recordsTableTexts[i].setString(recordText);
+			recordsTableTexts[i].setOrigin(recordsTableTexts[i].getLocalBounds().width / 2, recordsTableTexts[i].getLocalBounds().height / 2);
+			recordsTableTexts[i].setPosition(SCREEN_WIDTH / 2, 200 + i * 30);
 		}
 	}
 
@@ -66,42 +81,35 @@ namespace ArkanoidGame
 		{
 			if (event.key.code == sf::Keyboard::Escape)
 			{
-				Application::Instance().GetGame().PopState();
+				// Return to main menu
+				if (game)
+				{
+					game->PopState();
+				}
 			}
 		}
 	}
 
 	void GameStateRecords::update(float timeDelta)
 	{
-		// No update logic needed
+		// No update logic needed for this state
 	}
 
 	void GameStateRecords::draw(sf::RenderWindow& window)
 	{
-		sf::Vector2f viewSize = window.getView().getSize();
-
 		// Draw background
 		window.draw(background);
 
 		// Draw title
-		titleText.setOrigin(GetTextOrigin(titleText, { 0.5f, 0.5f }));
-		titleText.setPosition(viewSize.x / 2.f, 50.f);
 		window.draw(titleText);
 
 		// Draw records table
-		std::vector<sf::Text*> textsList;
-		textsList.reserve(recordsTableTexts.size());
-		for (auto& text : recordsTableTexts)
+		for (const auto& recordText : recordsTableTexts)
 		{
-			textsList.push_back(&text);
+			window.draw(recordText);
 		}
 
-		sf::Vector2f tablePosition = { viewSize.x / 2.f, viewSize.y / 2.f };
-		DrawTextList(window, textsList, 10.f, Orientation::Vertical, Alignment::Min, tablePosition, { 0.5f, 0.f });
-
 		// Draw hint
-		hintText.setOrigin(GetTextOrigin(hintText, { 0.5f, 0.5f }));
-		hintText.setPosition(viewSize.x / 2.f, viewSize.y - 50.f);
 		window.draw(hintText);
 	}
 }

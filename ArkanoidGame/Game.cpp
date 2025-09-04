@@ -1,11 +1,11 @@
 #include "Game.h"
-#include <assert.h>
-#include <algorithm>
 #include "GameStatePlaying.h"
 #include "GameStateGameOver.h"
-#include "GameStateExitDialog.h"
 #include "GameStateMainMenu.h"
+#include "GameStateWin.h"
+#include "GameStateExitDialog.h"
 #include "GameStateRecords.h"
+#include <algorithm>
 
 namespace ArkanoidGame
 {
@@ -14,11 +14,11 @@ namespace ArkanoidGame
 		// Generate fake records table
 		recordsTable =
 		{
-			{"John", 1000},
-			{"Jane", 800 },
-			{"Alice", 600 },
-			{"Bob", 400 },
-			{"Clementine", 200 },
+			{"Player1", 1500},
+			{"Player2", 1200},
+			{"Player3", 1000},
+			{"Player4", 800},
+			{"Player5", 600},
 		};
 
 		stateChangeType = GameStateChangeType::None;
@@ -69,7 +69,12 @@ namespace ArkanoidGame
 		// Initialize new game state if needed
 		if (pendingGameStateType != GameStateType::None)
 		{
-			stateStack.push_back({ pendingGameStateType, CreateGameState(pendingGameStateType), pendingGameStateIsExclusivelyVisible });
+			auto newState = CreateGameState(pendingGameStateType);
+			if (newState)
+			{
+				newState->setGame(this);
+				stateStack.push_back({ pendingGameStateType, std::move(newState), pendingGameStateIsExclusivelyVisible });
+			}
 		}
 
 		stateChangeType = GameStateChangeType::None;
@@ -108,60 +113,54 @@ namespace ArkanoidGame
 
 	void Game::Shutdown()
 	{
-		// Clear all game states
 		stateStack.clear();
-
-		stateChangeType = GameStateChangeType::None;
-		pendingGameStateType = GameStateType::None;
-		pendingGameStateIsExclusivelyVisible = false;
-	}
-
-	void Game::PushState(GameStateType stateType, bool isExclusivelyVisible)
-	{
-		pendingGameStateType = stateType;
-		pendingGameStateIsExclusivelyVisible = isExclusivelyVisible;
-		stateChangeType = GameStateChangeType::Push;
-	}
-
-	void Game::PopState()
-	{
-		pendingGameStateType = GameStateType::None;
-		pendingGameStateIsExclusivelyVisible = false;
-		stateChangeType = GameStateChangeType::Pop;
-	}
-
-	void Game::SwitchStateTo(GameStateType newState)
-	{
-		pendingGameStateType = newState;
-		pendingGameStateIsExclusivelyVisible = false;
-		stateChangeType = GameStateChangeType::Switch;
 	}
 
 	bool Game::IsEnableOptions(GameOptions option) const
 	{
-		const bool isEnable = ((std::uint8_t)options & (std::uint8_t)option) != (std::uint8_t)GameOptions::Empty;
-		return isEnable;
+		return (options & option) == option;
 	}
 
 	void Game::SetOption(GameOptions option, bool value)
 	{
-		if (value) {
-			options = (GameOptions)((std::uint8_t)options | (std::uint8_t)option);
+		if (value)
+		{
+			options = static_cast<GameOptions>(static_cast<int>(options) | static_cast<int>(option));
 		}
-		else {
-			options = (GameOptions)((std::uint8_t)options & ~(std::uint8_t)option);
+		else
+		{
+			options = static_cast<GameOptions>(static_cast<int>(options) & ~static_cast<int>(option));
 		}
 	}
 
 	int Game::GetRecordByPlayerId(const std::string& playerId) const
 	{
 		auto it = recordsTable.find(playerId);
-		return it == recordsTable.end() ? 0 : it->second;
+		return (it != recordsTable.end()) ? it->second : 0;
 	}
 
 	void Game::UpdateRecord(const std::string& playerId, int score)
 	{
-		recordsTable[playerId] = std::max(recordsTable[playerId], score);
+		recordsTable[playerId] = score;
+	}
+
+	void Game::PushState(GameStateType stateType, bool isExclusivelyVisible)
+	{
+		stateChangeType = GameStateChangeType::Push;
+		pendingGameStateType = stateType;
+		pendingGameStateIsExclusivelyVisible = isExclusivelyVisible;
+	}
+
+	void Game::PopState()
+	{
+		stateChangeType = GameStateChangeType::Pop;
+	}
+
+	void Game::SwitchStateTo(GameStateType newState)
+	{
+		stateChangeType = GameStateChangeType::Switch;
+		pendingGameStateType = newState;
+		pendingGameStateIsExclusivelyVisible = false;
 	}
 
 	std::unique_ptr<GameStateBase> CreateGameState(GameStateType stateType)
@@ -169,27 +168,18 @@ namespace ArkanoidGame
 		switch (stateType)
 		{
 		case GameStateType::MainMenu:
-		{
 			return std::make_unique<GameStateMainMenu>();
-		}
 		case GameStateType::Playing:
-		{
 			return std::make_unique<GameStatePlaying>();
-		}
 		case GameStateType::GameOver:
-		{
 			return std::make_unique<GameStateGameOver>();
-		}
+		case GameStateType::Win:
+			return std::make_unique<GameStateWin>();
 		case GameStateType::ExitDialog:
-		{
 			return std::make_unique<GameStateExitDialog>();
-		}
 		case GameStateType::Records:
-		{
 			return std::make_unique<GameStateRecords>();
-		}
 		default:
-			assert(false); // We want to know if we forgot to implement new game state
 			return nullptr;
 		}
 	}

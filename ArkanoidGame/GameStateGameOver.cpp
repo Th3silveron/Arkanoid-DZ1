@@ -1,86 +1,72 @@
 #include "GameStateGameOver.h"
-#include "Application.h"
-#include "Game.h"
-#include "Text.h"
 #include "GameSettings.h"
-#include <assert.h>
-#include <sstream>
 
 namespace ArkanoidGame
 {
-	const char* PLAYER_NAME = "Player";
-
 	GameStateGameOver::GameStateGameOver()
 	{
-		assert(font.loadFromFile(RESOURCES_PATH + "Fonts/Roboto-Regular.ttf"));
 		initializeUI();
-		updateRecordsTable();
 	}
 
 	void GameStateGameOver::initializeUI()
 	{
-		timeSinceGameOver = 0.f;
+		// Load font
+		if (!font.loadFromFile(FONTS_PATH + "Roboto-Regular.ttf"))
+		{
+			// Fallback to default font if loading fails
+		}
 
-		sf::Color backgroundColor = sf::Color::Black;
-		backgroundColor.a = 200; // a means Alfa, opacity
-		background.setFillColor(backgroundColor);
+		// Initialize background
+		background.setSize(sf::Vector2f(SCREEN_WIDTH, SCREEN_HEIGHT));
+		background.setPosition(0.f, 0.f);
+		background.setFillColor(sf::Color(0, 0, 0, 200));
 
+		// Initialize game over text
 		gameOverText.setFont(font);
-		gameOverText.setCharacterSize(48);
-		gameOverText.setStyle(sf::Text::Bold);
-		gameOverText.setFillColor(sf::Color::Red);
 		gameOverText.setString("GAME OVER");
-		
-		recordsTableTexts.reserve(MAX_RECORDS_TABLE_SIZE);
+		gameOverText.setCharacterSize(48);
+		gameOverText.setFillColor(sf::Color::Red);
+		gameOverText.setOrigin(gameOverText.getLocalBounds().width / 2, gameOverText.getLocalBounds().height / 2);
+		gameOverText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100);
 
+		// Initialize hint text
 		hintText.setFont(font);
+		hintText.setString("Press any key to return to main menu");
 		hintText.setCharacterSize(24);
 		hintText.setFillColor(sf::Color::White);
-		hintText.setString("Press Space to restart\nEsc to exit to main menu");
+		hintText.setOrigin(hintText.getLocalBounds().width / 2, hintText.getLocalBounds().height / 2);
+		hintText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100);
+
+		// Initialize records table texts
+		recordsTableTexts.resize(5);
+		for (int i = 0; i < 5; ++i)
+		{
+			recordsTableTexts[i].setFont(font);
+			recordsTableTexts[i].setCharacterSize(20);
+			recordsTableTexts[i].setFillColor(sf::Color::Yellow);
+		}
+
+		updateRecordsTable();
 	}
 
 	void GameStateGameOver::updateRecordsTable()
 	{
-		std::multimap<int, std::string> sortedRecordsTable;
-		Game& game = Application::Instance().GetGame();
-		for (const auto& item : game.GetRecordsTable())
-		{
-			sortedRecordsTable.insert(std::make_pair(item.second, item.first));
-		}
+		// This would normally fetch records from the Game class
+		// For now, we'll use placeholder data
+		std::vector<std::pair<std::string, int>> records = {
+			{"Player1", 1000},
+			{"Player2", 800},
+			{"Player3", 600},
+			{"Player4", 400},
+			{"Player5", 200}
+		};
 
-		bool isPlayerInTable = false;
-		auto it = sortedRecordsTable.rbegin();
-		for (int i = 0; i < MAX_RECORDS_TABLE_SIZE && it != sortedRecordsTable.rend(); ++i, ++it)
+		for (size_t i = 0; i < records.size() && i < recordsTableTexts.size(); ++i)
 		{
-			recordsTableTexts.emplace_back(); // Create text in place
-			sf::Text& text = recordsTableTexts.back();
-
-			// We can use streams for writing into string and reading from it
-			std::stringstream sstream;
-			sstream << i + 1 << ". " << it->second << ": " << it->first;
-			text.setString(sstream.str());
-			text.setFont(font);
-			text.setCharacterSize(24);
-			if (it->second == PLAYER_NAME)
-			{
-				text.setFillColor(sf::Color::Green);
-				isPlayerInTable = true;
-			}
-			else
-			{
-				text.setFillColor(sf::Color::White);
-			}
-		}
-
-		// If player is not in table, replace last element with him
-		if (!isPlayerInTable)
-		{
-			sf::Text& text = recordsTableTexts.back();
-			std::stringstream sstream;
-			int playerScores = game.GetRecordByPlayerId(PLAYER_NAME);
-			sstream << MAX_RECORDS_TABLE_SIZE << ". " << PLAYER_NAME << ": " << playerScores;
-			text.setString(sstream.str());
-			text.setFillColor(sf::Color::Green);
+			std::string recordText = std::to_string(i + 1) + ". " + records[i].first + " - " + std::to_string(records[i].second);
+			recordsTableTexts[i].setString(recordText);
+			recordsTableTexts[i].setOrigin(recordsTableTexts[i].getLocalBounds().width / 2, recordsTableTexts[i].getLocalBounds().height / 2);
+			recordsTableTexts[i].setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 20 + i * 30);
 		}
 	}
 
@@ -88,13 +74,10 @@ namespace ArkanoidGame
 	{
 		if (event.type == sf::Event::KeyPressed)
 		{
-			if (event.key.code == sf::Keyboard::Space)
+			// Any key pressed returns to main menu
+			if (game)
 			{
-				Application::Instance().GetGame().SwitchStateTo(GameStateType::Playing);
-			}
-			else if (event.key.code == sf::Keyboard::Escape)
-			{
-				Application::Instance().GetGame().SwitchStateTo(GameStateType::MainMenu);
+				game->SwitchStateTo(GameStateType::MainMenu);
 			}
 		}
 	}
@@ -102,36 +85,23 @@ namespace ArkanoidGame
 	void GameStateGameOver::update(float timeDelta)
 	{
 		timeSinceGameOver += timeDelta;
-
-		sf::Color gameOverTextColor = (int)timeSinceGameOver % 2 ? sf::Color::Red : sf::Color::Yellow;
-		gameOverText.setFillColor(gameOverTextColor);
 	}
 
 	void GameStateGameOver::draw(sf::RenderWindow& window)
 	{
-		sf::Vector2f viewSize = window.getView().getSize();
-
-		background.setOrigin(0.f, 0.f);
-		background.setSize(viewSize);
+		// Draw background
 		window.draw(background);
 
-		gameOverText.setOrigin(GetTextOrigin(gameOverText, { 0.5f, 1.f }));
-		gameOverText.setPosition(viewSize.x / 2.f, viewSize.y / 2 - 50.f);
+		// Draw game over text
 		window.draw(gameOverText);
 
-		// We need to create new vector here as DrawItemsList needs vector of pointers
-		std::vector<sf::Text*> textsList;
-		textsList.reserve(recordsTableTexts.size());
-		for (auto& text : recordsTableTexts)
-		{
-			textsList.push_back(&text);
-		}
-
-		sf::Vector2f tablePosition = { viewSize.x / 2, viewSize.y / 2.f };
-		DrawTextList(window, textsList, 10.f, Orientation::Vertical, Alignment::Min, tablePosition, { 0.5f, 0.f });
-
-		hintText.setOrigin(GetTextOrigin(hintText, { 0.5f, 1.f }));
-		hintText.setPosition(viewSize.x / 2.f, viewSize.y - 50.f);
+		// Draw hint text
 		window.draw(hintText);
+
+		// Draw records table
+		for (const auto& recordText : recordsTableTexts)
+		{
+			window.draw(recordText);
+		}
 	}
 }

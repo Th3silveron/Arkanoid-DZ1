@@ -4,17 +4,19 @@
 
 namespace ArkanoidGame
 {
-	class Game;
+	class Game; // Forward declaration
 
+	/**
+	 * @brief Game over state for Arkanoid game
+	 * 
+	 * Displays game over message, final score, and records table.
+	 * Player can press any key to return to main menu.
+	 */
 	class GameStateGameOver : public GameStateBase
 	{
 	private:
-		// Resources
 		sf::Font font;
-
 		float timeSinceGameOver = 0.f;
-
-		// UI data
 		sf::RectangleShape background;
 		sf::Text gameOverText;
 		sf::Text hintText;
@@ -24,7 +26,6 @@ namespace ArkanoidGame
 		GameStateGameOver();
 		~GameStateGameOver() = default;
 
-		// GameStateBase interface
 		void handleWindowEvent(const sf::Event& event) override;
 		void update(float timeDelta) override;
 		void draw(sf::RenderWindow& window) override;
