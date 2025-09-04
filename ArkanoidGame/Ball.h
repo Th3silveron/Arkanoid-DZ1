@@ -20,6 +20,8 @@ namespace ArkanoidGame
 		float velocityY;             // Vertical velocity
 		float speed;                 // Ball speed (magnitude of velocity)
 		bool isLaunched;             // Whether ball is in motion
+		float aimDirection;          // Aim direction (-1.0 to 1.0)
+		float lastCollisionTime;     // Time of last collision to prevent multiple hits
 
 	public:
 		Ball(float x, float y, float r, float s);
@@ -35,6 +37,8 @@ namespace ArkanoidGame
 		void launch();
 		void update(float timeDelta);
 		void draw(sf::RenderWindow& window) const;
+		void followPlatform(const sf::Vector2f& platformPosition, float platformWidth);
+		void setAimDirection(float direction); // -1.0 to 1.0, where -1 is left, 1 is right
 
 		// Collision handling
 		void handleWallCollision();

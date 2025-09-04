@@ -4,7 +4,7 @@
 namespace ArkanoidGame
 {
 	Ball::Ball(float x, float y, float r, float s)
-		: GameObject(x, y, r * 2, r * 2), radius(r), velocityX(0), velocityY(0), speed(s), isLaunched(false)
+		: GameObject(x, y, r * 2, r * 2), radius(r), velocityX(0), velocityY(0), speed(s), isLaunched(false), aimDirection(0.0f), lastCollisionTime(0.0f)
 	{
 		shape.setRadius(radius);
 		shape.setPosition(x, y);
@@ -38,12 +38,8 @@ namespace ArkanoidGame
 		{
 			isLaunched = true;
 			
-			// Random initial direction (upward with slight randomness)
-			std::random_device rd;
-			std::mt19937 gen(rd());
-			std::uniform_real_distribution<float> angleDist(-0.3f, 0.3f);
-			
-			float angle = angleDist(gen);
+			// Use aim direction for launch
+			float angle = aimDirection * 0.5f; // Limit angle to ±0.5 radians (about ±30 degrees)
 			velocityX = speed * sin(angle);
 			velocityY = -speed * cos(angle); // Negative for upward movement
 		}
@@ -53,6 +49,10 @@ namespace ArkanoidGame
 	{
 		if (isLaunched)
 		{
+			// Store previous position for collision detection
+			float prevX = position.x;
+			float prevY = position.y;
+			
 			// Update position
 			position.x += velocityX * timeDelta;
 			position.y += velocityY * timeDelta;
@@ -120,42 +120,43 @@ namespace ArkanoidGame
 		
 		if (ballBounds.intersects(blockBounds))
 		{
-			// Calculate collision side
-			float ballCenterX = position.x;
-			float ballCenterY = position.y;
-			float blockCenterX = blockBounds.left + blockBounds.width / 2;
-			float blockCenterY = blockBounds.top + blockBounds.height / 2;
+			// Calculate overlap on each axis
+			float overlapLeft = (ballBounds.left + ballBounds.width) - blockBounds.left;
+			float overlapRight = (blockBounds.left + blockBounds.width) - ballBounds.left;
+			float overlapTop = (ballBounds.top + ballBounds.height) - blockBounds.top;
+			float overlapBottom = (blockBounds.top + blockBounds.height) - ballBounds.top;
 			
-			float deltaX = ballCenterX - blockCenterX;
-			float deltaY = ballCenterY - blockCenterY;
+			// Find the minimum overlap to determine collision side
+			float minOverlap = std::min({overlapLeft, overlapRight, overlapTop, overlapBottom});
 			
-			// Determine which side was hit
-			if (abs(deltaX) / blockBounds.width > abs(deltaY) / blockBounds.height)
+			// Determine collision side and bounce accordingly
+			if (minOverlap == overlapLeft)
 			{
-				// Hit left or right side
-				velocityX = -velocityX;
+				// Hit left side of block
+				velocityX = -abs(velocityX); // Ensure negative velocity
+				position.x = blockBounds.left - radius - 2.0f; // Move ball out with extra margin
 			}
-			else
+			else if (minOverlap == overlapRight)
 			{
-				// Hit top or bottom side
-				velocityY = -velocityY;
+				// Hit right side of block
+				velocityX = abs(velocityX); // Ensure positive velocity
+				position.x = blockBounds.left + blockBounds.width + radius + 2.0f; // Move ball out with extra margin
+			}
+			else if (minOverlap == overlapTop)
+			{
+				// Hit top side of block
+				velocityY = -abs(velocityY); // Ensure negative velocity (upward)
+				position.y = blockBounds.top - radius - 2.0f; // Move ball out with extra margin
+			}
+			else if (minOverlap == overlapBottom)
+			{
+				// Hit bottom side of block
+				velocityY = abs(velocityY); // Ensure positive velocity (downward)
+				position.y = blockBounds.top + blockBounds.height + radius + 2.0f; // Move ball out with extra margin
 			}
 			
-			// Move ball out of block to prevent getting stuck
-			if (abs(deltaX) / blockBounds.width > abs(deltaY) / blockBounds.height)
-			{
-				if (deltaX > 0)
-					position.x = blockBounds.left + blockBounds.width + radius;
-				else
-					position.x = blockBounds.left - radius;
-			}
-			else
-			{
-				if (deltaY > 0)
-					position.y = blockBounds.top + blockBounds.height + radius;
-				else
-					position.y = blockBounds.top - radius;
-			}
+			// Update shape position
+			shape.setPosition(position.x, position.y);
 		}
 	}
 
@@ -166,6 +167,7 @@ namespace ArkanoidGame
 		velocityX = 0;
 		velocityY = 0;
 		isLaunched = false;
+		aimDirection = 0.0f; // Reset aim direction
 		shape.setPosition(x, y);
 	}
 
@@ -180,5 +182,22 @@ namespace ArkanoidGame
 	{
 		velocityX = vx;
 		velocityY = vy;
+	}
+
+	void Ball::followPlatform(const sf::Vector2f& platformPosition, float platformWidth)
+	{
+		if (!isLaunched)
+		{
+			// Position ball on platform center
+			position.x = platformPosition.x;
+			position.y = platformPosition.y - radius; // Ball sits on top of platform
+			shape.setPosition(position.x, position.y);
+		}
+	}
+
+	void Ball::setAimDirection(float direction)
+	{
+		// Clamp direction between -1.0 and 1.0
+		aimDirection = std::max(-1.0f, std::min(1.0f, direction));
 	}
 }

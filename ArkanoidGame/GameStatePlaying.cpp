@@ -50,7 +50,7 @@ namespace ArkanoidGame
 		inputHintText.setFont(font);
 		inputHintText.setCharacterSize(18);
 		inputHintText.setFillColor(sf::Color::White);
-		inputHintText.setString("Use LEFT/RIGHT arrows to move platform, SPACE to launch ball");
+		inputHintText.setString("LEFT/RIGHT: move platform | UP/DOWN: aim ball | SPACE: launch ball");
 
 		// Initialize sounds
 		ballHitSound.setBuffer(ballHitSoundBuffer);
@@ -115,10 +115,28 @@ namespace ArkanoidGame
 		platform.setMovingLeft(sf::Keyboard::isKeyPressed(sf::Keyboard::Left));
 		platform.setMovingRight(sf::Keyboard::isKeyPressed(sf::Keyboard::Right));
 
-		// Ball launch
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && !ball.getIsLaunched())
+		// Ball aiming and launch
+		if (!ball.getIsLaunched())
 		{
-			ball.launch();
+			// Aim with Up/Down arrows
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+			{
+				ball.setAimDirection(-1.0f); // Aim left
+			}
+			else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+			{
+				ball.setAimDirection(1.0f); // Aim right
+			}
+			else
+			{
+				ball.setAimDirection(0.0f); // Aim straight
+			}
+
+			// Launch ball with Space
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
+			{
+				ball.launch();
+			}
 		}
 	}
 
@@ -162,21 +180,30 @@ namespace ArkanoidGame
 	{
 		if (!ball.getIsLaunched()) return;
 
+		// Check collisions with all active blocks
 		for (auto& block : blocks)
 		{
-			if (block.getIsActive() && ball.checkCollision(block.getBounds()))
+			if (block.getIsActive())
 			{
-				// Handle collision
-				ball.handleBlockCollision(block.getBounds());
+				// Get ball and block bounds
+				sf::FloatRect ballBounds = ball.getBounds();
+				sf::FloatRect blockBounds = block.getBounds();
 				
-				// Destroy block and add points
-				score += block.getPoints();
-				block.destroy();
-				
-				// Play hit sound
-				ballHitSound.play();
-				
-				break; // Only handle one collision per frame
+				// Check if ball intersects with block
+				if (ballBounds.intersects(blockBounds))
+				{
+					// Handle collision
+					ball.handleBlockCollision(blockBounds);
+					
+					// Destroy block and add points
+					score += block.getPoints();
+					block.destroy();
+					
+					// Play hit sound
+					ballHitSound.play();
+					
+					break; // Only handle one collision per frame to prevent multiple hits
+				}
 			}
 		}
 	}
@@ -233,9 +260,23 @@ namespace ArkanoidGame
 		
 		// Update game objects
 		platform.update(timeDelta);
+		
+		// Make ball follow platform when not launched
+		if (!ball.getIsLaunched())
+		{
+			ball.followPlatform(platform.getPosition(), platform.getWidth());
+		}
+		
 		ball.update(timeDelta);
 		
+		// Check collisions multiple times if ball is moving fast to prevent tunneling
 		checkCollisions();
+		
+		// Additional collision check for fast-moving ball
+		if (ball.getIsLaunched())
+		{
+			checkBlockCollisions();
+		}
 
 		// Update UI
 		scoreText.setString("Score: " + std::to_string(score));
