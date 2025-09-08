@@ -34,3 +34,4 @@ namespace ArkanoidGame
 		return getBounds().intersects(otherBounds);
 	}
 }
+

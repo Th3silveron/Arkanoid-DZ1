@@ -31,4 +31,11 @@ namespace ArkanoidGame
 	{
 		isActive = false;
 	}
+
+	bool Block::OnHit()
+	{
+		// Default behavior: destroy block and bounce ball
+		destroy();
+		return true; // Ball should bounce
+	}
 }

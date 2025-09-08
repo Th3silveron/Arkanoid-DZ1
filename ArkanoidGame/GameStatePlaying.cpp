@@ -104,7 +104,19 @@ namespace ArkanoidGame
 				sf::Color color = blockColors[row % blockColors.size()];
 				int points = (numRows - row) * 10; // More points for higher rows
 				
-				blocks.emplace_back(x, y, blockWidth, blockHeight, color, points);
+				// Create different types of blocks based on position
+				if (row == 0) // Top row - DurableBricks
+				{
+					blocks.push_back(std::make_unique<DurableBrick>(x, y, blockWidth, blockHeight, color, points, 3));
+				}
+				else if (row == 1 && col % 3 == 0) // Middle row - some GlassBricks
+				{
+					blocks.push_back(std::make_unique<GlassBrick>(x, y, blockWidth, blockHeight, points));
+				}
+				else // Regular blocks
+				{
+					blocks.push_back(std::make_unique<Block>(x, y, blockWidth, blockHeight, color, points));
+				}
 			}
 		}
 	}
@@ -183,21 +195,28 @@ namespace ArkanoidGame
 		// Check collisions with all active blocks
 		for (auto& block : blocks)
 		{
-			if (block.getIsActive())
+			if (block->getIsActive())
 			{
 				// Get ball and block bounds
 				sf::FloatRect ballBounds = ball.getBounds();
-				sf::FloatRect blockBounds = block.getBounds();
+				sf::FloatRect blockBounds = block->getBounds();
 				
 				// Check if ball intersects with block
 				if (ballBounds.intersects(blockBounds))
 				{
-					// Handle collision
-					ball.handleBlockCollision(blockBounds);
+					// Handle collision - check if block should bounce ball
+					bool shouldBounce = block->OnHit();
 					
-					// Destroy block and add points
-					score += block.getPoints();
-					block.destroy();
+					if (shouldBounce)
+					{
+						ball.handleBlockCollision(blockBounds);
+					}
+					
+					// Add points if block was destroyed
+					if (block->isDestroyed())
+					{
+						score += block->getPoints();
+					}
 					
 					// Play hit sound
 					ballHitSound.play();
@@ -228,7 +247,7 @@ namespace ArkanoidGame
 		// Check if all blocks are destroyed
 		for (const auto& block : blocks)
 		{
-			if (block.getIsActive())
+			if (block->getIsActive())
 			{
 				return false; // At least one block is still active
 			}
@@ -291,7 +310,7 @@ namespace ArkanoidGame
 		// Draw blocks
 		for (const auto& block : blocks)
 		{
-			block.draw(window);
+			block->draw(window);
 		}
 
 		// Draw game objects

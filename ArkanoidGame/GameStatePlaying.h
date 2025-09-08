@@ -4,8 +4,11 @@
 #include "Platform.h"
 #include "Ball.h"
 #include "Block.h"
+#include "DurableBrick.h"
+#include "GlassBrick.h"
 #include "Game.h"
 #include <vector>
+#include <memory>
 
 namespace ArkanoidGame
 {
@@ -31,7 +34,7 @@ namespace ArkanoidGame
 		// Game objects
 		Platform platform;
 		Ball ball;
-		std::vector<Block> blocks;
+		std::vector<std::unique_ptr<Block>> blocks;
 		int score = 0;
 		int lives = 3;
 

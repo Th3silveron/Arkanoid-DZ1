@@ -12,7 +12,7 @@ namespace ArkanoidGame
 	 */
 	class Block : public GameObject
 	{
-	private:
+	protected:
 		sf::RectangleShape shape;
 		sf::Color color;
 		int points = 10; // Points awarded when destroyed
@@ -32,5 +32,6 @@ namespace ArkanoidGame
 		// Block-specific methods
 		void destroy();
 		bool isDestroyed() const { return !isActive; }
+		virtual bool OnHit(); // Virtual method for handling hits, returns true if block should bounce ball
 	};
 }
