@@ -6,6 +6,7 @@
 #include "Block.h"
 #include "DurableBrick.h"
 #include "GlassBrick.h"
+#include "BonusManager.h"
 #include "Game.h"
 #include <vector>
 #include <memory>
@@ -35,6 +36,7 @@ namespace ArkanoidGame
 		Platform platform;
 		Ball ball;
 		std::vector<std::unique_ptr<Block>> blocks;
+		BonusManager bonusManager;
 		int score = 0;
 		int lives = 3;
 
@@ -42,6 +44,7 @@ namespace ArkanoidGame
 		sf::Text scoreText;
 		sf::Text livesText;
 		sf::Text inputHintText;
+		sf::Text activeEffectsText;
 		sf::RectangleShape background;
 
 		// Audio
@@ -63,6 +66,7 @@ namespace ArkanoidGame
 		void initializeUI();
 		void initializeGameObjects();
 		void initializeBlocks();
+		void setupBonusCallbacks();
 		void handleInput();
 		void checkCollisions();
 		void checkBlockCollisions();

@@ -1,5 +1,6 @@
 #include "GameStateRecords.h"
 #include "GameSettings.h"
+#include <algorithm>
 
 namespace ArkanoidGame
 {
@@ -51,27 +52,39 @@ namespace ArkanoidGame
 
 	void GameStateRecords::updateRecordsTable()
 	{
-		// This would normally fetch records from the Game class
-		// For now, we'll use placeholder data
-		std::vector<std::pair<std::string, int>> records = {
-			{"Player1", 1500},
-			{"Player2", 1200},
-			{"Player3", 1000},
-			{"Player4", 800},
-			{"Player5", 600},
-			{"Player6", 500},
-			{"Player7", 400},
-			{"Player8", 300},
-			{"Player9", 200},
-			{"Player10", 100}
-		};
+		if (!game) return;
 
-		for (size_t i = 0; i < records.size() && i < recordsTableTexts.size(); ++i)
+		// Get records from Game class
+		const auto& recordsTable = game->GetRecordsTable();
+		
+		// Convert to vector and sort by score (descending)
+		std::vector<std::pair<std::string, int>> records;
+		for (const auto& record : recordsTable)
+		{
+			records.push_back({record.first, record.second});
+		}
+		
+		// Sort by score in descending order
+		std::sort(records.begin(), records.end(), 
+			[](const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
+				return a.second > b.second;
+			});
+
+		// Display up to 10 records
+		size_t displayCount = std::min(records.size(), recordsTableTexts.size());
+		
+		for (size_t i = 0; i < displayCount; ++i)
 		{
 			std::string recordText = std::to_string(i + 1) + ". " + records[i].first + " - " + std::to_string(records[i].second);
 			recordsTableTexts[i].setString(recordText);
 			recordsTableTexts[i].setOrigin(recordsTableTexts[i].getLocalBounds().width / 2, recordsTableTexts[i].getLocalBounds().height / 2);
-			recordsTableTexts[i].setPosition(SCREEN_WIDTH / 2, 200 + i * 30);
+			recordsTableTexts[i].setPosition(SCREEN_WIDTH / 2, 200.0f + static_cast<float>(i) * 30.0f);
+		}
+		
+		// Clear remaining slots if there are fewer than 10 records
+		for (size_t i = displayCount; i < recordsTableTexts.size(); ++i)
+		{
+			recordsTableTexts[i].setString("");
 		}
 	}
 
@@ -84,7 +97,7 @@ namespace ArkanoidGame
 				// Return to main menu
 				if (game)
 				{
-					game->PopState();
+					game->SwitchStateTo(GameStateType::MainMenu);
 				}
 			}
 		}
@@ -92,7 +105,8 @@ namespace ArkanoidGame
 
 	void GameStateRecords::update(float timeDelta)
 	{
-		// No update logic needed for this state
+		// Update records table in case new records were added
+		updateRecordsTable();
 	}
 
 	void GameStateRecords::draw(sf::RenderWindow& window)

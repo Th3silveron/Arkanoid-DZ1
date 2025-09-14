@@ -1,5 +1,8 @@
 #include "GameStatePlaying.h"
 #include "GameSettings.h"
+#include <random>
+#include <algorithm>
+#include <cmath>
 
 namespace ArkanoidGame
 {
@@ -9,6 +12,7 @@ namespace ArkanoidGame
 	{
 		initializeUI();
 		initializeGameObjects();
+		setupBonusCallbacks();
 	}
 
 	void GameStatePlaying::initializeUI()
@@ -36,21 +40,27 @@ namespace ArkanoidGame
 
 		// Initialize score text
 		scoreText.setFont(font);
-		scoreText.setCharacterSize(24);
+		scoreText.setCharacterSize(UI_FONT_SIZE_MEDIUM);
 		scoreText.setFillColor(sf::Color::Yellow);
 		scoreText.setString("Score: 0");
 
 		// Initialize lives text
 		livesText.setFont(font);
-		livesText.setCharacterSize(24);
+		livesText.setCharacterSize(UI_FONT_SIZE_MEDIUM);
 		livesText.setFillColor(sf::Color::Red);
 		livesText.setString("Lives: 3");
 
 		// Initialize input hint text
 		inputHintText.setFont(font);
-		inputHintText.setCharacterSize(18);
+		inputHintText.setCharacterSize(UI_FONT_SIZE_SMALL);
 		inputHintText.setFillColor(sf::Color::White);
 		inputHintText.setString("LEFT/RIGHT: move platform | UP/DOWN: aim ball | SPACE: launch ball");
+
+		// Initialize active effects text
+		activeEffectsText.setFont(font);
+		activeEffectsText.setCharacterSize(UI_FONT_SIZE_TINY);
+		activeEffectsText.setFillColor(sf::Color::Cyan);
+		activeEffectsText.setString("Active Effects: None");
 
 		// Initialize sounds
 		ballHitSound.setBuffer(ballHitSoundBuffer);
@@ -64,13 +74,29 @@ namespace ArkanoidGame
 		isGameActive = true;
 	}
 
+	void GameStatePlaying::setupBonusCallbacks()
+	{
+		// Set up callbacks for bonus effects
+		bonusManager.setScoreCallback([this](int points) {
+			score += points;
+		});
+		
+		bonusManager.setLivesCallback([this](int extraLives) {
+			lives += extraLives;
+		});
+		
+		bonusManager.setEffectCallback([this](const std::string& effectName) {
+			// Could add visual feedback here
+			// For now, we'll just update the score text
+		});
+	}
+
 	void GameStatePlaying::initializeBlocks()
 	{
 		blocks.clear();
 		
-		// Define block colors
+		// Define block colors (excluding red - reserved for DurableBricks)
 		std::vector<sf::Color> blockColors = {
-			sf::Color::Red,
 			sf::Color::Green,
 			sf::Color::Blue,
 			sf::Color::Yellow,
@@ -82,42 +108,91 @@ namespace ArkanoidGame
 			sf::Color(0, 128, 0) // Dark Green
 		};
 		
-		// Block dimensions
-		const float blockWidth = 80.0f;
-		const float blockHeight = 30.0f;
-		const float blockSpacing = 10.0f;
+		// Random number generator
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		
+		// Grid setup - keep the grid structure but randomize within each cell
 		const float startX = 50.0f;
 		const float startY = 100.0f;
+		const float cellWidth = BLOCK_WIDTH + BLOCK_SPACING;
+		const float cellHeight = BLOCK_HEIGHT + BLOCK_SPACING;
 		
-		// Create blocks in a grid pattern
-		int blocksPerRow = 8;
-		int numRows = 3;
+		// Smaller random offset for more even grid
+		const float maxOffsetX = BLOCK_SPACING * 0.15f; // 15% of spacing for more even look
+		const float maxOffsetY = BLOCK_SPACING * 0.15f;
 		
-		for (int row = 0; row < numRows; ++row)
+		// Create all blocks with perfect grid positions first
+		std::vector<std::unique_ptr<Block>> allBlocks;
+		const int totalBlocks = BLOCK_ROWS * BLOCKS_PER_ROW;
+		
+		// Create all blocks with perfect grid positions
+		for (int i = 0; i < totalBlocks; ++i)
 		{
-			for (int col = 0; col < blocksPerRow; ++col)
+			int row = i / BLOCKS_PER_ROW;
+			int col = i % BLOCKS_PER_ROW;
+			
+			// Perfect grid position
+			float x = startX + col * cellWidth;
+			float y = startY + row * cellHeight;
+			
+			// Add small random offset
+			std::uniform_real_distribution<float> offsetXDist(-maxOffsetX, maxOffsetX);
+			std::uniform_real_distribution<float> offsetYDist(-maxOffsetY, maxOffsetY);
+			
+			x += offsetXDist(gen);
+			y += offsetYDist(gen);
+			
+			// Ensure blocks stay within screen bounds
+			x = std::max(0.0f, std::min(x, SCREEN_WIDTH - BLOCK_WIDTH));
+			y = std::max(0.0f, std::min(y, SCREEN_HEIGHT - 200.0f - BLOCK_HEIGHT));
+			
+			// Random color for each block
+			std::uniform_int_distribution<int> colorDist(0, static_cast<int>(blockColors.size()) - 1);
+			sf::Color color = blockColors[colorDist(gen)];
+			
+			// Random points (10-30)
+			std::uniform_int_distribution<int> pointsDist(10, 30);
+			int points = pointsDist(gen);
+			
+			// Create regular block (we'll randomize types later)
+			allBlocks.push_back(std::make_unique<Block>(x, y, BLOCK_WIDTH, BLOCK_HEIGHT, color, points));
+		}
+		
+		// Now randomize block types - convert some to special types
+		std::uniform_int_distribution<int> typeDist(0, 9);
+		for (auto& block : allBlocks)
+		{
+			int blockType = typeDist(gen);
+			
+			if (blockType < 2) // 20% chance for DurableBricks
 			{
-				float x = startX + col * (blockWidth + blockSpacing);
-				float y = startY + row * (blockHeight + blockSpacing);
+				// Get current block properties
+				sf::Vector2f pos = block->getPosition();
+				int points = block->getPoints();
 				
-				// Use different colors for each row
-				sf::Color color = blockColors[row % blockColors.size()];
-				int points = (numRows - row) * 10; // More points for higher rows
+				// DurableBricks are always red
+				sf::Color durableColor = sf::Color::Red;
 				
-				// Create different types of blocks based on position
-				if (row == 0) // Top row - DurableBricks
-				{
-					blocks.push_back(std::make_unique<DurableBrick>(x, y, blockWidth, blockHeight, color, points, 3));
-				}
-				else if (row == 1 && col % 3 == 0) // Middle row - some GlassBricks
-				{
-					blocks.push_back(std::make_unique<GlassBrick>(x, y, blockWidth, blockHeight, points));
-				}
-				else // Regular blocks
-				{
-					blocks.push_back(std::make_unique<Block>(x, y, blockWidth, blockHeight, color, points));
-				}
+				// Replace with DurableBrick
+				block = std::make_unique<DurableBrick>(pos.x, pos.y, BLOCK_WIDTH, BLOCK_HEIGHT, durableColor, points, 3);
 			}
+			else if (blockType < 4) // 20% chance for GlassBricks
+			{
+				// Get current block properties
+				sf::Vector2f pos = block->getPosition();
+				int points = block->getPoints();
+				
+				// Replace with GlassBrick (keeps its default glass color)
+				block = std::make_unique<GlassBrick>(pos.x, pos.y, BLOCK_WIDTH, BLOCK_HEIGHT, points);
+			}
+			// 60% remain as regular blocks with their random colors
+		}
+		
+		// Move all blocks to the main blocks vector
+		for (auto& block : allBlocks)
+		{
+			blocks.push_back(std::move(block));
 		}
 	}
 
@@ -180,10 +255,12 @@ namespace ArkanoidGame
 		// Check win condition
 		if (checkWinCondition())
 		{
-			// Player won - switch to win state
+			// Player won - save game data and switch to name input state
 			if (game)
 			{
-				game->SwitchStateTo(GameStateType::Win);
+				game->SetCurrentScore(score);
+				game->SetGameResult(true); // Player won
+				game->SwitchStateTo(GameStateType::NameInput);
 			}
 		}
 	}
@@ -216,6 +293,9 @@ namespace ArkanoidGame
 					if (block->isDestroyed())
 					{
 						score += block->getPoints();
+						
+						// Create bonus at block position (10% chance)
+						bonusManager.createBonusFromBlock(blockBounds.left + blockBounds.width / 2, blockBounds.top + blockBounds.height / 2);
 					}
 					
 					// Play hit sound
@@ -239,7 +319,14 @@ namespace ArkanoidGame
 	{
 		gameOverSound.play();
 		isGameActive = false;
-		// Game over logic will be handled by the Game class
+		
+		// Save game data and switch to name input state
+		if (game)
+		{
+			game->SetCurrentScore(score);
+			game->SetGameResult(false); // Player lost
+			game->SwitchStateTo(GameStateType::NameInput);
+		}
 	}
 
 	bool GameStatePlaying::checkWinCondition()
@@ -288,18 +375,32 @@ namespace ArkanoidGame
 		
 		ball.update(timeDelta);
 		
-		// Check collisions multiple times if ball is moving fast to prevent tunneling
-		checkCollisions();
+		// Update bonuses
+		bonusManager.updateBonuses(timeDelta, platform, ball);
 		
-		// Additional collision check for fast-moving ball
-		if (ball.getIsLaunched())
-		{
-			checkBlockCollisions();
-		}
+		// Check collisions
+		checkCollisions();
 
 		// Update UI
 		scoreText.setString("Score: " + std::to_string(score));
 		livesText.setString("Lives: " + std::to_string(lives));
+		
+		// Update active effects display
+		auto activeEffects = bonusManager.getActiveEffectNames();
+		if (activeEffects.empty())
+		{
+			activeEffectsText.setString("Active Effects: None");
+		}
+		else
+		{
+			std::string effectsString = "Active Effects: ";
+			for (size_t i = 0; i < activeEffects.size(); ++i)
+			{
+				if (i > 0) effectsString += ", ";
+				effectsString += activeEffects[i];
+			}
+			activeEffectsText.setString(effectsString);
+		}
 	}
 
 	void GameStatePlaying::draw(sf::RenderWindow& window)
@@ -316,6 +417,9 @@ namespace ArkanoidGame
 		// Draw game objects
 		platform.draw(window);
 		ball.draw(window);
+		
+		// Draw bonuses
+		bonusManager.drawBonuses(window);
 
 		// Draw UI
 		scoreText.setPosition(10, 10);
@@ -323,6 +427,9 @@ namespace ArkanoidGame
 
 		livesText.setPosition(10, 40);
 		window.draw(livesText);
+
+		activeEffectsText.setPosition(10, 70);
+		window.draw(activeEffectsText);
 
 		inputHintText.setPosition(10, SCREEN_HEIGHT - 30);
 		window.draw(inputHintText);

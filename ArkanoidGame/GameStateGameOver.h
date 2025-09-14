@@ -9,18 +9,24 @@ namespace ArkanoidGame
 	/**
 	 * @brief Game over state for Arkanoid game
 	 * 
-	 * Displays game over message, final score, and records table.
-	 * Player can press any key to return to main menu.
+	 * Displays game over message and offers to play again.
+	 * Player can choose Yes (restart game) or No (return to main menu).
 	 */
 	class GameStateGameOver : public GameStateBase
 	{
 	private:
 		sf::Font font;
-		float timeSinceGameOver = 0.f;
-		sf::RectangleShape background;
 		sf::Text gameOverText;
-		sf::Text hintText;
-		std::vector<sf::Text> recordsTableTexts;
+		sf::Text defeatMessageText;
+		sf::Text playAgainText;
+		sf::Text yesText;
+		sf::Text noText;
+		sf::RectangleShape background;
+		
+		// Menu navigation
+		int selectedOption = 0; // 0 = Yes, 1 = No
+		static const int MENU_OPTIONS_COUNT = 2;
+		sf::Text* menuOptions[MENU_OPTIONS_COUNT];
 
 	public:
 		GameStateGameOver();
@@ -32,6 +38,7 @@ namespace ArkanoidGame
 
 	private:
 		void initializeUI();
-		void updateRecordsTable();
+		void updateMenuSelection();
+		void selectOption();
 	};
 }

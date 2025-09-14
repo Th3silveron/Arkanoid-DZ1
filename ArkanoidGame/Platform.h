@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include "GameSettings.h"
+#include "GameObject.h"
 
 namespace ArkanoidGame
 {
@@ -11,15 +12,11 @@ namespace ArkanoidGame
 	 * at the bottom of the screen. It's controlled by arrow keys
 	 * and is used to bounce the ball back into play.
 	 */
-	class Platform
+	class Platform : public GameObject
 	{
 	private:
 		sf::RectangleShape shape;    // Visual representation of the platform
 		float speed;                 // Movement speed in pixels per second
-		float positionX;             // Current X position
-		float positionY;             // Current Y position (fixed at bottom)
-		float width;                 // Platform width
-		float height;                // Platform height
 		bool isMovingLeft;           // Flag for left movement
 		bool isMovingRight;          // Flag for right movement
 
@@ -28,20 +25,20 @@ namespace ArkanoidGame
 		~Platform() = default;
 
 		// Getters
-		sf::FloatRect getBounds() const;
-		sf::Vector2f getPosition() const;
-		float getWidth() const;
-		float getHeight() const;
+		sf::FloatRect getBounds() const override;
+		float getWidth() const { return size.x; }
+		float getHeight() const { return size.y; }
 
 		// Movement control
 		void setMovingLeft(bool moving);
 		void setMovingRight(bool moving);
-		void update(float timeDelta);
+		void update(float timeDelta) override;
 
 		// Rendering
-		void draw(sf::RenderWindow& window) const;
-
-		// Collision detection
-		bool checkCollision(const sf::FloatRect& otherBounds) const;
+		void draw(sf::RenderWindow& window) const override;
+		
+		// Bonus support
+		void setWidth(float newWidth);
+		void setVisualEffect(bool hasEffect);
 	};
 }

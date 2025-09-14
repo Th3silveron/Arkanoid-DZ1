@@ -32,7 +32,7 @@ namespace ArkanoidGame
 		// Initialize title text
 		titleText.setFont(font);
 		titleText.setString("ARKANOID GAME");
-		titleText.setCharacterSize(48);
+		titleText.setCharacterSize(UI_FONT_SIZE_LARGE);
 		titleText.setFillColor(sf::Color::Yellow);
 		titleText.setOrigin(titleText.getLocalBounds().width / 2, titleText.getLocalBounds().height / 2);
 		titleText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 150);
@@ -40,7 +40,7 @@ namespace ArkanoidGame
 		// Initialize start game text
 		startGameText.setFont(font);
 		startGameText.setString("Start Game");
-		startGameText.setCharacterSize(24);
+		startGameText.setCharacterSize(UI_FONT_SIZE_MEDIUM);
 		startGameText.setFillColor(sf::Color::White);
 		startGameText.setOrigin(startGameText.getLocalBounds().width / 2, startGameText.getLocalBounds().height / 2);
 		startGameText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50);
@@ -48,7 +48,7 @@ namespace ArkanoidGame
 		// Initialize records text
 		recordsText.setFont(font);
 		recordsText.setString("View Records");
-		recordsText.setCharacterSize(24);
+		recordsText.setCharacterSize(UI_FONT_SIZE_MEDIUM);
 		recordsText.setFillColor(sf::Color::White);
 		recordsText.setOrigin(recordsText.getLocalBounds().width / 2, recordsText.getLocalBounds().height / 2);
 		recordsText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
@@ -56,7 +56,7 @@ namespace ArkanoidGame
 		// Initialize exit text
 		exitText.setFont(font);
 		exitText.setString("Exit Game");
-		exitText.setCharacterSize(24);
+		exitText.setCharacterSize(UI_FONT_SIZE_MEDIUM);
 		exitText.setFillColor(sf::Color::White);
 		exitText.setOrigin(exitText.getLocalBounds().width / 2, exitText.getLocalBounds().height / 2);
 		exitText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 50);
@@ -140,7 +140,7 @@ namespace ArkanoidGame
 		sf::Text hintText;
 		hintText.setFont(font);
 		hintText.setString("Use UP/DOWN arrows to navigate, ENTER to select, ESC to exit");
-		hintText.setCharacterSize(16);
+		hintText.setCharacterSize(UI_FONT_SIZE_TINY);
 		hintText.setFillColor(sf::Color::Cyan);
 		hintText.setOrigin(hintText.getLocalBounds().width / 2, hintText.getLocalBounds().height / 2);
 		hintText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);

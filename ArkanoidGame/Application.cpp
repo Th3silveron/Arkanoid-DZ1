@@ -11,7 +11,7 @@ namespace ArkanoidGame
 	}
 
 	Application::Application() :
-		window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), GAME_NAME)
+		window(sf::VideoMode(static_cast<unsigned int>(SCREEN_WIDTH), static_cast<unsigned int>(SCREEN_HEIGHT)), GAME_NAME)
 	{
 		// Init random number generator
 		unsigned int seed = (unsigned int)time(nullptr); // Get current time as seed. You can also use any other number to fix randomization
@@ -22,7 +22,6 @@ namespace ArkanoidGame
 	{
 		// Init game clock
 		sf::Clock gameClock;
-		constexpr float TIME_PER_FRAME = 1.0f / 60.0f; // 60 fps
 
 		// Game loop
 		while (window.isOpen()) {

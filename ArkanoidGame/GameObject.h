@@ -23,7 +23,7 @@ namespace ArkanoidGame
 		// Getters
 		sf::Vector2f getPosition() const { return position; }
 		sf::Vector2f getSize() const { return size; }
-		sf::FloatRect getBounds() const;
+		virtual sf::FloatRect getBounds() const;
 		bool getIsActive() const { return isActive; }
 
 		// Setters

@@ -4,7 +4,7 @@
 namespace ArkanoidGame
 {
 	Ball::Ball(float x, float y, float r, float s)
-		: GameObject(x, y, r * 2, r * 2), radius(r), velocityX(0), velocityY(0), speed(s), isLaunched(false), aimDirection(0.0f), lastCollisionTime(0.0f)
+		: GameObject(x, y, r * 2, r * 2), radius(r), velocityX(0), velocityY(0), speed(s), isLaunched(false), aimDirection(0.0f), lastCollisionTime(0.0f), isBonusSpeedActive(false)
 	{
 		shape.setRadius(radius);
 		shape.setPosition(x, y);
@@ -17,10 +17,6 @@ namespace ArkanoidGame
 		return shape.getGlobalBounds();
 	}
 
-	sf::Vector2f Ball::getPosition() const
-	{
-		return position;
-	}
 
 	float Ball::getRadius() const
 	{
@@ -60,6 +56,20 @@ namespace ArkanoidGame
 			// Handle wall collisions
 			handleWallCollision();
 
+			// Limit maximum speed to prevent runaway acceleration (only if no bonus is active)
+			if (!isBonusSpeedActive)
+			{
+				float currentSpeed = sqrt(velocityX * velocityX + velocityY * velocityY);
+				float maxAllowedSpeed = 450.0f; // Hard limit of 450 speed units
+				
+				if (currentSpeed > maxAllowedSpeed)
+				{
+					float scale = maxAllowedSpeed / currentSpeed;
+					velocityX *= scale;
+					velocityY *= scale;
+				}
+			}
+
 			// Update shape position
 			shape.setPosition(position.x, position.y);
 		}
@@ -98,19 +108,33 @@ namespace ArkanoidGame
 		
 		if (ballBounds.intersects(platformBounds))
 		{
-			// Bounce the ball upward
-			velocityY = -abs(velocityY);
-			
-			// Adjust X velocity based on where the ball hits the platform
-			float platformCenterX = platformBounds.left + platformBounds.width / 2;
-			float hitPosition = position.x - platformCenterX;
-			float normalizedHit = hitPosition / (platformBounds.width / 2);
-			
-			// Add some horizontal velocity based on hit position
-			velocityX += normalizedHit * speed * 0.5f;
-			
-			// Ensure ball doesn't get stuck inside platform
-			position.y = platformBounds.top - radius;
+			// Only bounce if ball is moving downward (velocityY > 0)
+			if (velocityY > 0)
+			{
+				// Bounce the ball upward
+				velocityY = -abs(velocityY);
+				
+				// Adjust X velocity based on where the ball hits the platform
+				float platformCenterX = platformBounds.left + platformBounds.width / 2;
+				float hitPosition = position.x - platformCenterX;
+				float normalizedHit = hitPosition / (platformBounds.width / 2);
+				
+				// Clamp normalized hit to prevent extreme angles
+				normalizedHit = std::max(-1.0f, std::min(1.0f, normalizedHit));
+				
+				// Add some horizontal velocity based on hit position, but limit it
+				float maxHorizontalSpeed = speed * 0.8f; // Limit horizontal speed to 80% of ball speed
+				float targetVelocityX = normalizedHit * maxHorizontalSpeed;
+				
+				// Smooth transition to target velocity instead of adding
+				velocityX = targetVelocityX;
+				
+				// Ensure ball doesn't get stuck inside platform
+				position.y = platformBounds.top - radius;
+				
+				// Update shape position to reflect the corrected position
+				shape.setPosition(position.x, position.y);
+			}
 		}
 	}
 
@@ -168,6 +192,7 @@ namespace ArkanoidGame
 		velocityY = 0;
 		isLaunched = false;
 		aimDirection = 0.0f; // Reset aim direction
+		isBonusSpeedActive = false; // Reset bonus speed flag
 		shape.setPosition(x, y);
 	}
 
@@ -199,5 +224,40 @@ namespace ArkanoidGame
 	{
 		// Clamp direction between -1.0 and 1.0
 		aimDirection = std::max(-1.0f, std::min(1.0f, direction));
+	}
+
+	void Ball::setSpeed(float newSpeed)
+	{
+		speed = newSpeed;
+		isBonusSpeedActive = true; // Mark that bonus speed is active
+		
+		// If ball is already launched, update velocity magnitude while preserving direction
+		if (isLaunched)
+		{
+			float currentMagnitude = sqrt(velocityX * velocityX + velocityY * velocityY);
+			if (currentMagnitude > 0)
+			{
+				float scale = speed / currentMagnitude;
+				velocityX *= scale;
+				velocityY *= scale;
+			}
+		}
+	}
+
+	void Ball::setVisualEffect(bool hasEffect)
+	{
+		if (hasEffect)
+		{
+			shape.setFillColor(sf::Color::Yellow); // Yellow when effect is active
+		}
+		else
+		{
+			shape.setFillColor(sf::Color::White); // Normal white color
+		}
+	}
+
+	float Ball::getCurrentSpeed() const
+	{
+		return sqrt(velocityX * velocityX + velocityY * velocityY);
 	}
 }

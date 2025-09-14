@@ -22,14 +22,14 @@ namespace ArkanoidGame
 		bool isLaunched;             // Whether ball is in motion
 		float aimDirection;          // Aim direction (-1.0 to 1.0)
 		float lastCollisionTime;     // Time of last collision to prevent multiple hits
+		bool isBonusSpeedActive;     // Whether bonus speed is currently active
 
 	public:
 		Ball(float x, float y, float r, float s);
 		~Ball() = default;
 
 		// Getters
-		sf::FloatRect getBounds() const;
-		sf::Vector2f getPosition() const;
+		sf::FloatRect getBounds() const override;
 		float getRadius() const;
 		bool getIsLaunched() const;
 
@@ -49,5 +49,11 @@ namespace ArkanoidGame
 		void reset(float x, float y);
 		void setPosition(float x, float y);
 		void setVelocity(float vx, float vy);
+		
+		// Bonus support
+		void setSpeed(float newSpeed);
+		float getSpeed() const { return speed; }
+		float getCurrentSpeed() const; // Get actual current speed magnitude
+		void setVisualEffect(bool hasEffect);
 	};
 }

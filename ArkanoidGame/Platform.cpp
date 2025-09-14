@@ -3,32 +3,17 @@
 namespace ArkanoidGame
 {
 	Platform::Platform(float x, float y, float w, float h, float s)
-		: speed(s), positionX(x), positionY(y), width(w), height(h), isMovingLeft(false), isMovingRight(false)
+		: GameObject(x, y, w, h), speed(s), isMovingLeft(false), isMovingRight(false)
 	{
-		shape.setSize(sf::Vector2f(width, height));
-		shape.setPosition(positionX, positionY);
+		shape.setSize(sf::Vector2f(size.x, size.y));
+		shape.setPosition(position);
 		shape.setFillColor(sf::Color::Blue);
-		shape.setOrigin(width / 2, height / 2);
+		shape.setOrigin(size.x / 2, size.y / 2);
 	}
 
 	sf::FloatRect Platform::getBounds() const
 	{
 		return shape.getGlobalBounds();
-	}
-
-	sf::Vector2f Platform::getPosition() const
-	{
-		return sf::Vector2f(positionX, positionY);
-	}
-
-	float Platform::getWidth() const
-	{
-		return width;
-	}
-
-	float Platform::getHeight() const
-	{
-		return height;
 	}
 
 	void Platform::setMovingLeft(bool moving)
@@ -55,20 +40,20 @@ namespace ArkanoidGame
 		}
 
 		// Update position
-		positionX += deltaX;
+		position.x += deltaX;
 
 		// Keep platform within screen bounds
-		if (positionX - width / 2 < 0)
+		if (position.x - size.x / 2 < 0)
 		{
-			positionX = width / 2;
+			position.x = size.x / 2;
 		}
-		else if (positionX + width / 2 > SCREEN_WIDTH)
+		else if (position.x + size.x / 2 > SCREEN_WIDTH)
 		{
-			positionX = SCREEN_WIDTH - width / 2;
+			position.x = SCREEN_WIDTH - size.x / 2;
 		}
 
 		// Update shape position
-		shape.setPosition(positionX, positionY);
+		shape.setPosition(position);
 	}
 
 	void Platform::draw(sf::RenderWindow& window) const
@@ -76,8 +61,34 @@ namespace ArkanoidGame
 		window.draw(shape);
 	}
 
-	bool Platform::checkCollision(const sf::FloatRect& otherBounds) const
+	void Platform::setWidth(float newWidth)
 	{
-		return shape.getGlobalBounds().intersects(otherBounds);
+		size.x = newWidth;
+		shape.setSize(sf::Vector2f(size.x, size.y));
+		shape.setOrigin(size.x / 2, size.y / 2);
+		
+		// Ensure platform stays within bounds
+		if (position.x - size.x / 2 < 0)
+		{
+			position.x = size.x / 2;
+		}
+		else if (position.x + size.x / 2 > SCREEN_WIDTH)
+		{
+			position.x = SCREEN_WIDTH - size.x / 2;
+		}
+		
+		shape.setPosition(position);
+	}
+
+	void Platform::setVisualEffect(bool hasEffect)
+	{
+		if (hasEffect)
+		{
+			shape.setFillColor(sf::Color::Magenta); // Purple when effect is active
+		}
+		else
+		{
+			shape.setFillColor(sf::Color::Blue); // Normal blue color
+		}
 	}
 }

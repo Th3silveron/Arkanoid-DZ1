@@ -41,3 +41,4 @@ namespace ArkanoidGame
 		shape.setOutlineThickness(1.0f);
 	}
 }
+

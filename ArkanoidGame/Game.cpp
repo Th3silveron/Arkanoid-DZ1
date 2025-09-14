@@ -5,21 +5,18 @@
 #include "GameStateWin.h"
 #include "GameStateExitDialog.h"
 #include "GameStateRecords.h"
+#include "GameStateNameInput.h"
 #include <algorithm>
+#include <climits>
+#include <fstream>
+#include <sstream>
 
 namespace ArkanoidGame
 {
 	Game::Game()
 	{
-		// Generate fake records table
-		recordsTable =
-		{
-			{"Player1", 1500},
-			{"Player2", 1200},
-			{"Player3", 1000},
-			{"Player4", 800},
-			{"Player5", 600},
-		};
+		// Load records from file, or use default if file doesn't exist
+		LoadRecordsFromFile();
 
 		stateChangeType = GameStateChangeType::None;
 		pendingGameStateType = GameStateType::None;
@@ -29,6 +26,8 @@ namespace ArkanoidGame
 
 	Game::~Game()
 	{
+		// Save records before shutting down
+		SaveRecordsToFile();
 		Shutdown();
 	}
 
@@ -144,6 +143,58 @@ namespace ArkanoidGame
 		recordsTable[playerId] = score;
 	}
 
+	bool Game::IsScoreHighEnough() const
+	{
+		// Check if current score is high enough to be in top 5
+		if (recordsTable.size() < 5)
+		{
+			return true; // Always allow if less than 5 records
+		}
+		
+		// Find the lowest score in current records
+		int lowestScore = INT_MAX;
+		for (const auto& record : recordsTable)
+		{
+			lowestScore = std::min(lowestScore, record.second);
+		}
+		
+		// Player needs to beat the lowest score to qualify
+		return currentScore > lowestScore;
+	}
+
+	void Game::AddRecord(const std::string& playerName, int score)
+	{
+		// Add the record
+		recordsTable[playerName] = score;
+		
+		// If we have more than 10 records, remove the lowest ones
+		if (recordsTable.size() > 10)
+		{
+			// Convert to vector and sort by score
+			std::vector<std::pair<std::string, int>> records;
+			for (const auto& record : recordsTable)
+			{
+				records.push_back({record.first, record.second});
+			}
+			
+			// Sort by score in descending order
+			std::sort(records.begin(), records.end(), 
+				[](const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
+					return a.second > b.second;
+				});
+			
+			// Keep only top 10
+			recordsTable.clear();
+			for (size_t i = 0; i < 10 && i < records.size(); ++i)
+			{
+				recordsTable[records[i].first] = records[i].second;
+			}
+		}
+		
+		// Save records immediately after adding new record
+		SaveRecordsToFile();
+	}
+
 	void Game::PushState(GameStateType stateType, bool isExclusivelyVisible)
 	{
 		stateChangeType = GameStateChangeType::Push;
@@ -179,8 +230,70 @@ namespace ArkanoidGame
 			return std::make_unique<GameStateExitDialog>();
 		case GameStateType::Records:
 			return std::make_unique<GameStateRecords>();
+		case GameStateType::NameInput:
+			return std::make_unique<GameStateNameInput>();
 		default:
 			return nullptr;
+		}
+	}
+
+	void Game::SaveRecordsToFile()
+	{
+		std::ofstream file(RECORDS_FILE);
+		if (!file.is_open())
+		{
+			return; // Failed to open file, silently continue
+		}
+
+		// Write each record in format: "PlayerName Score"
+		for (const auto& record : recordsTable)
+		{
+			file << record.first << " " << record.second << std::endl;
+		}
+	}
+
+	void Game::LoadRecordsFromFile()
+	{
+		std::ifstream file(RECORDS_FILE);
+		if (!file.is_open())
+		{
+			// File doesn't exist, use default records
+			recordsTable =
+			{
+				{"Champion", 195},
+				{"ProGamer", 180},
+				{"BlockBreaker", 165},
+				{"ArcadeMaster", 150},
+				{"SpeedRunner", 135},
+			};
+			return;
+		}
+
+		recordsTable.clear();
+		std::string line;
+		while (std::getline(file, line))
+		{
+			std::istringstream iss(line);
+			std::string playerName;
+			int score;
+			
+			if (iss >> playerName >> score)
+			{
+				recordsTable[playerName] = score;
+			}
+		}
+
+		// If no records were loaded, use defaults
+		if (recordsTable.empty())
+		{
+			recordsTable =
+			{
+				{"Champion", 195},
+				{"ProGamer", 180},
+				{"BlockBreaker", 165},
+				{"ArcadeMaster", 150},
+				{"SpeedRunner", 135},
+			};
 		}
 	}
 }

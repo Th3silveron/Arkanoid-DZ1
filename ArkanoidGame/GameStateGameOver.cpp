@@ -6,6 +6,13 @@ namespace ArkanoidGame
 	GameStateGameOver::GameStateGameOver()
 	{
 		initializeUI();
+		
+		// Initialize menu options array
+		menuOptions[0] = &yesText;
+		menuOptions[1] = &noText;
+		
+		// Initialize menu selection
+		updateMenuSelection();
 	}
 
 	void GameStateGameOver::initializeUI()
@@ -19,72 +26,104 @@ namespace ArkanoidGame
 		// Initialize background
 		background.setSize(sf::Vector2f(SCREEN_WIDTH, SCREEN_HEIGHT));
 		background.setPosition(0.f, 0.f);
-		background.setFillColor(sf::Color(0, 0, 0, 200));
+		background.setFillColor(sf::Color(100, 0, 0, 200)); // Red background
 
 		// Initialize game over text
 		gameOverText.setFont(font);
 		gameOverText.setString("GAME OVER");
-		gameOverText.setCharacterSize(48);
+		gameOverText.setCharacterSize(UI_FONT_SIZE_LARGE);
 		gameOverText.setFillColor(sf::Color::Red);
 		gameOverText.setOrigin(gameOverText.getLocalBounds().width / 2, gameOverText.getLocalBounds().height / 2);
-		gameOverText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100);
+		gameOverText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 150);
 
-		// Initialize hint text
-		hintText.setFont(font);
-		hintText.setString("Press any key to return to main menu");
-		hintText.setCharacterSize(24);
-		hintText.setFillColor(sf::Color::White);
-		hintText.setOrigin(hintText.getLocalBounds().width / 2, hintText.getLocalBounds().height / 2);
-		hintText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 100);
+		// Initialize defeat message text
+		defeatMessageText.setFont(font);
+		defeatMessageText.setString("You lost all your lives!");
+		defeatMessageText.setCharacterSize(UI_FONT_SIZE_MEDIUM);
+		defeatMessageText.setFillColor(sf::Color::White);
+		defeatMessageText.setOrigin(defeatMessageText.getLocalBounds().width / 2, defeatMessageText.getLocalBounds().height / 2);
+		defeatMessageText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 100);
 
-		// Initialize records table texts
-		recordsTableTexts.resize(5);
-		for (int i = 0; i < 5; ++i)
-		{
-			recordsTableTexts[i].setFont(font);
-			recordsTableTexts[i].setCharacterSize(20);
-			recordsTableTexts[i].setFillColor(sf::Color::Yellow);
-		}
+		// Initialize play again text
+		playAgainText.setFont(font);
+		playAgainText.setString("Would you like to play again?");
+		playAgainText.setCharacterSize(UI_FONT_SIZE_SMALL);
+		playAgainText.setFillColor(sf::Color::White);
+		playAgainText.setOrigin(playAgainText.getLocalBounds().width / 2, playAgainText.getLocalBounds().height / 2);
+		playAgainText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50);
 
-		updateRecordsTable();
-	}
+		// Initialize yes text
+		yesText.setFont(font);
+		yesText.setString("Yes - Play Again");
+		yesText.setCharacterSize(UI_FONT_SIZE_MEDIUM);
+		yesText.setFillColor(sf::Color::White);
+		yesText.setOrigin(yesText.getLocalBounds().width / 2, yesText.getLocalBounds().height / 2);
+		yesText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 20);
 
-	void GameStateGameOver::updateRecordsTable()
-	{
-		// This would normally fetch records from the Game class
-		// For now, we'll use placeholder data
-		std::vector<std::pair<std::string, int>> records = {
-			{"Player1", 1000},
-			{"Player2", 800},
-			{"Player3", 600},
-			{"Player4", 400},
-			{"Player5", 200}
-		};
-
-		for (size_t i = 0; i < records.size() && i < recordsTableTexts.size(); ++i)
-		{
-			std::string recordText = std::to_string(i + 1) + ". " + records[i].first + " - " + std::to_string(records[i].second);
-			recordsTableTexts[i].setString(recordText);
-			recordsTableTexts[i].setOrigin(recordsTableTexts[i].getLocalBounds().width / 2, recordsTableTexts[i].getLocalBounds().height / 2);
-			recordsTableTexts[i].setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 20 + i * 30);
-		}
+		// Initialize no text
+		noText.setFont(font);
+		noText.setString("No - Main Menu");
+		noText.setCharacterSize(UI_FONT_SIZE_MEDIUM);
+		noText.setFillColor(sf::Color::White);
+		noText.setOrigin(noText.getLocalBounds().width / 2, noText.getLocalBounds().height / 2);
+		noText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 20);
 	}
 
 	void GameStateGameOver::handleWindowEvent(const sf::Event& event)
 	{
 		if (event.type == sf::Event::KeyPressed)
 		{
-			// Any key pressed returns to main menu
-			if (game)
+			if (event.key.code == sf::Keyboard::Up)
 			{
-				game->SwitchStateTo(GameStateType::MainMenu);
+				selectedOption = (selectedOption - 1 + MENU_OPTIONS_COUNT) % MENU_OPTIONS_COUNT;
+				updateMenuSelection();
+			}
+			else if (event.key.code == sf::Keyboard::Down)
+			{
+				selectedOption = (selectedOption + 1) % MENU_OPTIONS_COUNT;
+				updateMenuSelection();
+			}
+			else if (event.key.code == sf::Keyboard::Enter || event.key.code == sf::Keyboard::Space)
+			{
+				selectOption();
+			}
+			else if (event.key.code == sf::Keyboard::Escape)
+			{
+				// ESC defaults to No (Main Menu)
+				selectedOption = 1;
+				selectOption();
 			}
 		}
 	}
 
 	void GameStateGameOver::update(float timeDelta)
 	{
-		timeSinceGameOver += timeDelta;
+		// No update logic needed for this state
+	}
+
+	void GameStateGameOver::updateMenuSelection()
+	{
+		// Reset all text colors to white
+		yesText.setFillColor(sf::Color::White);
+		noText.setFillColor(sf::Color::White);
+		
+		// Highlight selected option
+		menuOptions[selectedOption]->setFillColor(sf::Color::Yellow);
+	}
+
+	void GameStateGameOver::selectOption()
+	{
+		if (!game) return;
+		
+		switch (selectedOption)
+		{
+		case 0: // Yes - Play Again
+			game->SwitchStateTo(GameStateType::Playing);
+			break;
+		case 1: // No - Main Menu
+			game->SwitchStateTo(GameStateType::MainMenu);
+			break;
+		}
 	}
 
 	void GameStateGameOver::draw(sf::RenderWindow& window)
@@ -92,16 +131,21 @@ namespace ArkanoidGame
 		// Draw background
 		window.draw(background);
 
-		// Draw game over text
+		// Draw all text elements
 		window.draw(gameOverText);
-
-		// Draw hint text
+		window.draw(defeatMessageText);
+		window.draw(playAgainText);
+		window.draw(yesText);
+		window.draw(noText);
+		
+		// Draw control hint
+		sf::Text hintText;
+		hintText.setFont(font);
+		hintText.setString("Use UP/DOWN arrows to navigate, ENTER to select, ESC for Main Menu");
+		hintText.setCharacterSize(UI_FONT_SIZE_TINY);
+		hintText.setFillColor(sf::Color::Cyan);
+		hintText.setOrigin(hintText.getLocalBounds().width / 2, hintText.getLocalBounds().height / 2);
+		hintText.setPosition(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
 		window.draw(hintText);
-
-		// Draw records table
-		for (const auto& recordText : recordsTableTexts)
-		{
-			window.draw(recordText);
-		}
 	}
 }

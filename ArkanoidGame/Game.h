@@ -24,6 +24,7 @@ namespace ArkanoidGame
 		Win,
 		ExitDialog,
 		Records,
+		NameInput,
 	};
 
 	// Forward declaration
@@ -80,6 +81,18 @@ namespace ArkanoidGame
 		int GetRecordByPlayerId(const std::string& playerId) const;
 		void UpdateRecord(const std::string& playerId, int score);
 
+		// Game session data
+		void SetCurrentScore(int score) { currentScore = score; }
+		int GetCurrentScore() const { return currentScore; }
+		void SetGameResult(bool won) { gameWon = won; }
+		bool GetGameResult() const { return gameWon; }
+		bool IsScoreHighEnough() const;
+		void AddRecord(const std::string& playerName, int score);
+
+		// Records persistence
+		void SaveRecordsToFile();
+		void LoadRecordsFromFile();
+
 		// Add new game state on top of the stack
 		void PushState(GameStateType stateType, bool isExclusivelyVisible);
 
@@ -98,6 +111,10 @@ namespace ArkanoidGame
 
 		GameOptions options = GameOptions::Default;
 		RecordsTable recordsTable;
+		
+		// Current game session data
+		int currentScore = 0;
+		bool gameWon = false;
 	};
 
 	std::unique_ptr<GameStateBase> CreateGameState(GameStateType stateType);
